@@ -1,0 +1,74 @@
+#basic script- prints the vertices, edges and faces of a mesh to fe file
+#will be used as script to grasshopper component
+
+import Rhino as rc
+import rhinoscriptsyntax as rs
+import os
+
+def meshEdgeLines(mesh):
+    
+    vertices = []
+    edges = []
+
+    for i in range(mesh.Vertices.Count):
+        vertices.append(mesh.Vertices[i])
+        v = mesh.Vertices[i]
+        #print (v)
+        neighbours = mesh.Vertices.GetConnectedVertices(i)
+        for n in neighbours:
+            if n > i:
+                edge = (i,n)
+                edges.append(edge)        
+    
+    return vertices, edges
+
+out_v, out_e = meshEdgeLines(x)
+
+faces = rs.MeshFaceVertices(x)
+
+edges_dict = {}
+faces_list = []
+index = 0
+
+for face in faces:
+    e_a = tuple(sorted(face[0:2]))
+    edges_dict[e_a] = edges_dict.get(e_a, index)
+    e_b = tuple(sorted(face[1:3]))
+    edges_dict[e_b] = edges_dict.get(e_b, index+1)
+    e_c = tuple(sorted((face[0], face[2])))
+    edges_dict[e_c] = edges_dict.get(e_c, index+2)
+    index = index + 3
+    faces_list.append((edges_dict[e_a],edges_dict[e_b],edges_dict[e_c]))
+
+
+ns = rs.MeshVertices(x)
+for v in ns:
+    print(v)
+
+Filename='Ico1_4'
+
+with open("D:\TECHNION\geometry project\example.fe", 'w') as fileID:
+    # Write vertices
+    fileID.write('vertices\n')
+    for i, v in enumerate(out_v):
+        fileID.write(f"{i} {v}\n")
+        #else:
+        #    fileID.write(f"{UniqueVerticesIndex[ij]}\t{UniqueVertices[ij,0]:.2f} {UniqueVertices[ij,1]:.2f} {UniqueVertices[ij,2]:.2f}\r\n")
+
+    # Write edges
+    fileID.write('\nedges\n')
+    for edge, index in edges_dict.items():
+        fileID.write(f"{index}\t{str(edge)[1:-1]}\n")
+        #else:
+        #    fileID.write(f"{EdgesIDToWrite[ij]}\t{EdgesToWrite[ij,0]} {EdgesToWrite[ij,1]}\r\n")
+
+    # Write faces
+    fileID.write('\nfaces\n')
+    for j, f in enumerate(faces_list):
+        fileID.write(f"{j}\t{str(f)[1:-1]}\n")
+    #NumInternalFaces = FacesID[-1]
+
+
+    fileID.write('read\n')  # additional commands to to Surface Evolver
+    fileID.write('N\n')  # Set target volume to actual volume
+    fileID.write('set edge color 4 where fixed\n')
