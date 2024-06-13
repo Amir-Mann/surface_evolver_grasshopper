@@ -2,6 +2,7 @@ from Rhino.Geometry import Mesh
 import rhinoscriptsyntax as rs
 import re
 import os
+import subprocess
 
 SCALE_FACTOR = 10
 VERTCIES_START = "vertices        /*  coordinates  */    \n"
@@ -66,8 +67,10 @@ def create_mesh(file_string):
                               verts_id_to_index[edges_to_verts[edge2][0]], 
                               verts_id_to_index[edges_to_verts[edge3][0]]))
     return (verts, faces)
+COMMAND = r"C:\Evolver\evolver.exe C:\Users\user\Documents\7th_semester\fluids\surface_evolver_grasshopper\fe_demos\3ballsrunanddump.fe"
 
-#os.system(r"C:\Evolver\evolver.exe C:\Users\user\Documents\7th_semester\fluids\surface_evolver_grasshopper\fe_demos\3ballsrunanddump.fe")
+subprocess.run(COMMAND)
+
 FILE_PATH = r"C:\Users\user\Documents\7th_semester\fluids\surface_evolver_grasshopper\fe_demos\3ballsrunanddump.dmp"
 file_string = open(FILE_PATH, "r").read()
 verts, faces = create_mesh(file_string)
