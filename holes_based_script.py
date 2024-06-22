@@ -199,7 +199,7 @@ def get_fe_str():
     fe_file_str, estimated_volume = get_mesh_topology_for_fe()
 
     fe_file_str += f"read // Take and run SE commands from this file\n"
-    fe_file_str += f"set body target {estimated_volume * volume_factor} where id == 1 // Sets the volume"
+    fe_file_str += f"set body target {-estimated_volume * volume_factor} where id == 1 // Sets the volume\n"
     if INTER_ACTIVE:
         fe_file_str += f"s // Open graphics window\n q // quit graphics command window\n"
 
@@ -216,7 +216,8 @@ def get_fe_str():
         fe_file_str += "optimize_step;\n"
 
     fe_file_str += f"g {G_INPUT}; // finall settling down\n"
-    fe_file_str += f'dump "{TEMP_DMP_PATH}" // Save results\n'
+    path_for_fe = TEMP_DMP_PATH.replace("\\", "\\\\")
+    fe_file_str += f'dump "{path_for_fe}" // Save results\n'
     if not INTER_ACTIVE:
         fe_file_str += "quit;\n"
         fe_file_str += "q;\n"
@@ -233,11 +234,7 @@ def clean_temps():
 
 def send_back_to_grasshopper(results_text):
     global result_mesh
-    file_string = open(results_text, "r").read()
-    verts, faces = create_mesh(file_string)
-    print("\n".join(map(str, verts)))
-    print("faces")
-    print("\n".join(map(str, faces)))
+    verts, faces = create_mesh(results_text)
     result_mesh = rs.AddMesh(verts, faces)
 
 def get_line_items(line):
@@ -323,5 +320,10 @@ def run_SE():
     send_back_to_grasshopper(results_text)
     clean_temps()
     return
-
+if not volume_factor:
+    volume_factor = 0.5
+if not G_INPUT:
+    G_INPUT = 20
+if not R_INPUT:
+    R_INPUT = 2
 run_SE()
