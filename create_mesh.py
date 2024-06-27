@@ -1,7 +1,6 @@
 from Rhino.Geometry import Mesh
 import rhinoscriptsyntax as rs
 import re
-import os
 import subprocess
 
 SCALE_FACTOR = 10

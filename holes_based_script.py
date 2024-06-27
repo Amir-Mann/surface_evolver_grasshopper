@@ -38,9 +38,9 @@ def get_mesh_data(mesh):
             vertex_indices[vertex] = i
 
     # Create a map to make unique vertices ids
-    vertex_map = {}
+    vertex_i_to_unique_id = {}
     for i in range(mesh.Vertices.Count):
-        vertex_map[i] = vertex_indices[mesh.Vertices.Point3dAt(i)]
+        vertex_i_to_unique_id[i] = vertex_indices[mesh.Vertices.Point3dAt(i)]
 
       
     # Extract edges
@@ -55,7 +55,7 @@ def get_mesh_data(mesh):
 
     for i in range(mesh.Faces.Count):
         face = mesh.Faces[i]
-        face_vertices = [vertex_map[face.A], vertex_map[face.B], vertex_map[face.C]]
+        face_vertices = [vertex_i_to_unique_id[face.A], vertex_i_to_unique_id[face.B], vertex_i_to_unique_id[face.C]]
 
         face_edges = []
         for j in range(len(face_vertices)):
@@ -229,7 +229,7 @@ def clean_temps():
     if os.path.isfile(TEMP_DMP_PATH):
         pathlib.Path.unlink(TEMP_DMP_PATH)
 
-
+ 
 ## Load into grasshopper ##
 
 def send_back_to_grasshopper(results_text):
@@ -304,8 +304,6 @@ def run_SE():
     fe_file_str = get_fe_str()
     with open(f"{TEMP_FE_PATH}", "w") as temp_fe:
         temp_fe.write(fe_file_str)
-
-    os.system(f"{SE_PATH} {TEMP_FE_PATH}")
 
     subprocess.run(f"{SE_PATH} {TEMP_FE_PATH}")
 
