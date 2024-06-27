@@ -17,7 +17,7 @@ LEFT_QURLY_BRACKET = r"{"
 RIGHT_QURLY_BRACKET = r"}"
 INTER_ACTIVE = False
 
-SCALE_FACTOR = 10
+SCALE_FACTOR = 1
 VERTCIES_START = "vertices        /*  coordinates  */    \n"
 EDGES_START = "edges  "
 FACETS_START = "faces    /* edge loop */      "
@@ -132,10 +132,6 @@ def get_mesh_topology_for_fe():
         if init:
             init = False
             max_X, max_Y, max_Z, min_X, min_Y, min_Z = v.X, v.Y, v.Z, v.X, v.Y, v.Z
-        if fixed_vertices[i] == 0:
-            gemotry_text += f"{i+1} {v.X:.2f} {v.Y:.2f} {v.Z:.2f}\n"
-        else:
-            gemotry_text += f"{i+1} {v.X:.2f} {v.Y:.2f} {v.Z:.2f} fixed\n"
         if v.X > max_X:
             max_X = v.X
         if v.Y > max_Y:
@@ -148,7 +144,12 @@ def get_mesh_topology_for_fe():
             min_Y = v.Y
         if v.Z < min_Z:
             min_Z = v.Z
-
+    for v, i in vertices.items():
+        if fixed_vertices[i] == 0:
+            gemotry_text += f"{i+1} {v.X + max_X:.2f} {v.Y:.2f} {v.Z:.2f}\n"
+        else:
+            gemotry_text += f"{i+1} {v.X + max_X:.2f} {v.Y:.2f} {v.Z:.2f} fixed\n"
+        
     # Write edges
     gemotry_text += '\nedges\n'
     for edge, index in edges.items():
@@ -199,9 +200,10 @@ def get_fe_str():
     fe_file_str, estimated_volume = get_mesh_topology_for_fe()
 
     fe_file_str += f"read // Take and run SE commands from this file\n"
-    fe_file_str += f"set body target {-estimated_volume * volume_factor} where id == 1 // Sets the volume\n"
+    fe_file_str += f"G 0; //\n"
+    fe_file_str += f"set body target {estimated_volume * 0.5 * volume_factor} where id == 1 // Sets the volume\n"
     if INTER_ACTIVE:
-        fe_file_str += f"s // Open graphics window\n q // quit graphics command window\n"
+        fe_file_str += f"s // Open graphics window\nq\n"
 
     fe_file_str += f"optimize_step := {LEFT_QURLY_BRACKET} g; // A general function looking for minimum\n"
     fe_file_str += f"    g {G_INPUT};\n"
@@ -247,7 +249,7 @@ def get_line_items(line):
     for item in items:
         if item.isdigit() or (item and item[0] == "-" and item[1:].isdigit()):
             returned_items.append(int(item))
-        elif re.findall("^-?\d+(\.\d+)?(e-?\d+)?$", item):
+        elif re.findall("^-?\d+(\.\d+)?(e(-|\+)\d+)?$", item):
             returned_items.append(float(item))
         else:
             returned_items.append(item)
@@ -309,15 +311,16 @@ def run_SE():
 
     if not os.path.isfile(TEMP_DMP_PATH):
         print("Surface Evolver Failed")
-        clean_temps()
+        #clean_temps()
         return
 
     with open(f"{TEMP_DMP_PATH}", "r") as temp_dmp:
         results_text = temp_dmp.read()
     
     send_back_to_grasshopper(results_text)
-    clean_temps()
+    #clean_temps()
     return
+
 if not volume_factor:
     volume_factor = 0.5
 if not G_INPUT:
