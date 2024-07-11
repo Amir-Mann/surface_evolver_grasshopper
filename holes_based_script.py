@@ -201,7 +201,7 @@ def get_fe_str():
 
     fe_file_str += f"read // Take and run SE commands from this file\n"
     fe_file_str += f"G 0; //\n"
-    fe_file_str += f"set body target {estimated_volume * 0.5 * volume_factor} where id == 1 // Sets the volume\n"
+    fe_file_str += f"set body target {-estimated_volume * 0.5 * volume_factor} where id == 1 // Sets the volume\n"
     if INTER_ACTIVE:
         fe_file_str += f"s // Open graphics window\nq\n"
 
@@ -327,4 +327,5 @@ if not G_INPUT:
     G_INPUT = 20
 if not R_INPUT:
     R_INPUT = 2
-run_SE()
+if run_on_change:
+    run_SE()
