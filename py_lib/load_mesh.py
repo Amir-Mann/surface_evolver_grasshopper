@@ -40,7 +40,12 @@ def get_mesh_data(mesh):
             edge = (face_vertices[j], face_vertices[(j + 1) % len(face_vertices)])
             
             # Ensure the edge is ordered consistently
-            if (edge[1], edge[0]) in edge_indices.keys():
+            if (edge[0], edge[1]) in edge_indices.keys():
+                index = edge_indices[(edge[0], edge[1])]
+                face_edges.append(index)
+                fixed_edges[index] = 0
+
+            elif (edge[1], edge[0]) in edge_indices.keys():
                 index = edge_indices[(edge[1], edge[0])]
                 face_edges.append(-index)
                 fixed_edges[index] = 0
