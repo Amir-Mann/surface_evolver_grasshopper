@@ -1,7 +1,5 @@
 
-
 if RUN_ON_CHANGE:
-
     import importlib.util
     import sys
     import os
@@ -26,10 +24,11 @@ if RUN_ON_CHANGE:
         "input_mesh": input_mesh,
         "result_mesh": {"verts":[], "faces":[]}
     }
-
-    spec = importlib.util.spec_from_file_location("surface_evolver_grasshopper", os.path.join(BASE_PATH, "surface_evolver_grasshopper", "main.py"))
-    main = importlib.util.module_from_spec(spec)
-    sys.modules["surface_evolver_grasshopper"] = main
-    spec.loader.exec_module(main)
+    
+    sys.path.append(os.path.join(BASE_PATH,"surface_evolver_grasshopper"))
+    sys.path.append(os.path.join(BASE_PATH,"surface_evolver_grasshopper", "py_lib"))
+    import main
     main.run_SE(arguments)
     result_mesh = rs.AddMesh(arguments["result_mesh"]["verts"], arguments["result_mesh"]["faces"])
+else:
+    print("Not running script until 'RUN_ON_CHANGE'")
