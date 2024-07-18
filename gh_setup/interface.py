@@ -21,6 +21,8 @@ if RUN_ON_CHANGE and input_mesh:
         G_INPUT = 20
     if not R_INPUT:
         R_INPUT = 2
+    if not input_boundary_conditions:
+        input_boundary_conditions = []
     arguments = {
         "VOLUME_FACTOR": VOLUME_FACTOR,
         "INTER_ACTIVE": INTER_ACTIVE,
@@ -28,6 +30,7 @@ if RUN_ON_CHANGE and input_mesh:
         "R_INPUT": R_INPUT,
         "BASE_PATH": BASE_PATH,
         "input_mesh": input_mesh,
+        "input_boundary_conditions": input_boundary_conditions,
         "result_mesh": {"verts":[], "faces":[]}
     }
     
