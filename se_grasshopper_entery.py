@@ -1,6 +1,4 @@
 
-import datetime
-print(f"Loading entery ay {datetime.datetime.now()}")
 import os
 import sys
 import importlib
@@ -10,12 +8,10 @@ from py_lib.reconstruct_mesh import reconstruct_mesh
 
 
 # Reload modules
-def reload_all_modules(base_path):
-    print("reload_all_modules")
+def reload_all_modules():
     importlib.reload(sys.modules["se_grasshopper_entery"])
     for module_name in list(sys.modules.keys()):
         if "py_lib" in module_name:
-            print(f"reloading {module_name}")
             importlib.reload(sys.modules[module_name])
 ## Execution ##
 

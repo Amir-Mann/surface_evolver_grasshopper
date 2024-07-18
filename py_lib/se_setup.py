@@ -27,16 +27,18 @@ def get_fe_str(arguments):
     fe_file_str += f"    V 5;\n"
     fe_file_str += f"    hessian_seek;\n"
     fe_file_str += f"    hessian_seek;\n"
+    fe_file_str += f"    o;\n"
     fe_file_str += f"{RIGHT_QURLY_BRACKET}\n"
 
-    for r in range(arguments['R_INPUT']):
-        fe_file_str += "r; // refine edges \n" if r != 0 else "u; // equiangulation, tries to polish up the triangulation.\n"
-        fe_file_str += "optimize_step;\n"
-
-    fe_file_str += f"g {arguments['G_INPUT']}; // finall settling down\n"
-    path_for_fe = arguments['TEMP_DMP_PATH'].replace("\\", "\\\\")
-    fe_file_str += f'dump "{path_for_fe}" // Save results\n'
     if not arguments['INTER_ACTIVE']:
+        for r in range(arguments['R_INPUT']):
+            fe_file_str += "r; // refine edges \n" if r != 0 else ""#"u; // equiangulation, tries to polish up the triangulation.\n"
+            fe_file_str += "optimize_step;\n"
+
+        fe_file_str += f"g {arguments['G_INPUT']}; // finall settling down\n"
+        path_for_fe = arguments['TEMP_DMP_PATH'].replace("\\", "\\\\")
+        fe_file_str += f'dump "{path_for_fe}" // Save results\n'
+    
         fe_file_str += "quit;\n"
         fe_file_str += "q;\n"
     return fe_file_str
