@@ -59,7 +59,10 @@ def create_mesh(file_string):
             if len(line) < 3:
                 break
             elif len(line) > 3:
-                edge1, edge2, edge3 = get_line_items(line)[1:4]
+                items = get_line_items(line)
+                if "fixed" in items:
+                    continue
+                edge1, edge2, edge3 = items[1:4]
                 assert edges_to_verts[edge1][1] == edges_to_verts[edge2][0]
                 assert edges_to_verts[edge2][1] == edges_to_verts[edge3][0]
                 assert edges_to_verts[edge3][1] == edges_to_verts[edge1][0]

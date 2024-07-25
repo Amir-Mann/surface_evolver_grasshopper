@@ -8,7 +8,7 @@ if not BASE_PATH:
 sys.path.append(os.path.join(BASE_PATH,"surface_evolver_grasshopper"))
 sys.path.append(os.path.join(BASE_PATH,"surface_evolver_grasshopper", "py_lib"))
 import se_grasshopper_entery
-se_grasshopper_entery.reload_all_modules(BASE_PATH)
+se_grasshopper_entery.reload_all_modules()
 
 if RUN_ON_CHANGE and input_mesh:
 
