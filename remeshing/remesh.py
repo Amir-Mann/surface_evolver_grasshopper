@@ -12,9 +12,6 @@ class Mesh():
         self.faces: list[Face] = faces
     
     def __init__(self, path:str):
-        self.load_from_json(path)
-    
-    def load_from_json(self, path:str):
         data = json.loads(open(path, "r").read())
         faces_index = data["faces"] # [ [f0_i0,f0_i1,f0_i2], [f1_i0,f1_i1,f1_i2], ... ,#faces]
         self.verts = [Vertex(*vert_cords) for vert_cords in data["verts"]] # [V(x0,y0,z0), V(x1,y1,z1), ... , #verts]
@@ -32,6 +29,7 @@ class Mesh():
             if count == 1:
                 for vert in edge:
                     vert.boundary = True
+            
     def visualize(self):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
