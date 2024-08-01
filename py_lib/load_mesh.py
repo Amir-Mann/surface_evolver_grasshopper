@@ -6,7 +6,7 @@ from collections import defaultdict
 NORMAL_DIRECTION = -1
 
 
-def get_mesh_data(mesh):
+def get_mesh_data(mesh, holes):
     
     # Extract vertices
     
@@ -30,6 +30,9 @@ def get_mesh_data(mesh):
     faces = []
     fixed_edges = [1] * (mesh.Faces.Count *3)
     edge_index = 1
+
+    fixed_vertices = [0] * len(mesh.Vertices)
+    fixed_faces = []
 
     for i in range(mesh.Faces.Count):
         face = mesh.Faces[i]
@@ -58,22 +61,22 @@ def get_mesh_data(mesh):
         
         faces.append(face_edges)
 
+
     # Identify fixed vertices
-    fixed_vertices = [0] * len(mesh.Vertices)
     for edge in edge_indices.keys():
         if fixed_edges[edge_indices[edge]] == 1:
             fixed_vertices[edge[0]] = 1
-            fixed_vertices[edge[1]] = 1        
+            fixed_vertices[edge[1]] = 1
 
 
     # Create fixed faces
-    edges_map = defaultdict(list)
+    edges_map = defaultdict(tuple)
     for edge in edge_indices:
-        if fixed_edges[edge_indices[edge]] == 1:
+        if fixed_edges[edge_indices[edge]] == 1 and len(edge) == 2:
             edges_map[edge[0]] = edge
     
     visited_edges = [0] * (len(edge_indices) + 1)
-    fixed_faces = []
+
 
     for edge in edge_indices:
         i = edge_indices[edge]
@@ -85,28 +88,83 @@ def get_mesh_data(mesh):
             next_vertex = cur_edge[1]
             
             while 1:
-                next_edge = edges_map[next_vertex]   
+                #print(next_vertex)
+                if next_vertex not in edges_map.keys():
+                    continue
+
+                next_edge = edges_map[next_vertex]
                 if next_edge == start_edge:
                     break
-                
-                next_edge_index = edge_indices[next_edge]    
+
+                #print(next_edge)
+                next_edge_index = edge_indices[next_edge]
                 face_edges.append(next_edge_index)
                 visited_edges[next_edge_index] = 1 
                 cur_edge = next_edge
                 next_vertex = next_edge[1]
                 
             fixed_faces.append(face_edges)
-    
+
+
+    # Get more boundary conditions
+    for holes_mesh in holes:
+        for i in range(holes_mesh.Faces.Count):
+            face = holes_mesh.Faces[i]
+            print(holes_mesh.Vertices.Point3dAt(face.A))
+            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)])
+            print(holes_mesh.Vertices.Point3dAt(face.B))
+            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)])
+            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)])
+
+            v1 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)]
+            v2 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)]
+            v3 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)]
+
+            fixed_vertices[v1] = 1
+            fixed_vertices[v2] = 1
+            fixed_vertices[v3] = 1
+
+            face_vertices = [v1, v2, v3]
+            face_edges = []
+
+            for j in range(len(face_vertices)):
+                edge = (face_vertices[j], face_vertices[(j + 1) % len(face_vertices)])
+
+                # Ensure the edge is ordered consistently
+                if edge in edge_indices.keys():
+                    face_edges.append(edge_indices[edge])
+
+                else:
+                    edge = (edge[1], edge[0])
+                    face_edges.append(-edge_indices[edge])
+
+                fixed_edges[edge_indices[edge]] = 1
+
+            if face_edges not in faces:
+                face_edges = [face_edges[1], face_edges[2], face_edges[0]]
+
+            if face_edges not in faces:
+                face_edges = [face_edges[1], face_edges[2], face_edges[0]]
+
+            if face_edges not in faces:
+                print("error face not found")
+
+            else:
+                faces.remove(face_edges)
+                fixed_faces.append(face_edges)
+
     return vertex_indices, fixed_vertices, edge_indices, fixed_edges, faces, fixed_faces
 
-def parse_mesh(mesh):
+
+def parse_mesh(mesh, holes):
     if mesh is None:
         return {}, [], {}, [], [], []
     
-    return get_mesh_data(mesh)
+    return get_mesh_data(mesh, holes)
+
 
 def get_mesh_topology_for_fe(arguments):
-    vertices, fixed_vertices, edges, fixed_edges, faces, fixed_faces = parse_mesh(arguments["input_mesh"])
+    vertices, fixed_vertices, edges, fixed_edges, faces, fixed_faces = parse_mesh(arguments["input_mesh"], arguments["input_boundary_conditions"])
     gemotry_text = ""
     # Write vertices
     gemotry_text += 'vertices\n'
