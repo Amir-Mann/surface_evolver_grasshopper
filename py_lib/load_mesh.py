@@ -31,6 +31,9 @@ def get_mesh_data(mesh, holes):
     fixed_edges = [1] * (mesh.Faces.Count *3)
     edge_index = 1
 
+    fixed_vertices = [0] * len(mesh.Vertices)
+    fixed_faces = []
+
     for i in range(mesh.Faces.Count):
         face = mesh.Faces[i]
         face_vertices = [vertex_i_to_unique_id[face.A], vertex_i_to_unique_id[face.B], vertex_i_to_unique_id[face.C]]
@@ -62,50 +65,60 @@ def get_mesh_data(mesh, holes):
     for holes_mesh in holes:
         for i in range(holes_mesh.Faces.Count):
             face = holes_mesh.Faces[i]
-            print(holes_mesh.Vertices.Point3dAt(face.A))
-            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)])
-            print(holes_mesh.Vertices.Point3dAt(face.B))
-            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)])
-            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)])
+            #print(holes_mesh.Vertices.Point3dAt(face.A))
+            #print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)])
+            #print(holes_mesh.Vertices.Point3dAt(face.B))
+            #print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)])
+            #print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)])
 
-            face_vertices = [vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)],
-                             vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)],
-                             vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)]]
+            v1 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)]
+            v2 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)]
+            v3 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)]
+
+            fixed_vertices[v1] = 1
+            fixed_vertices[v2] = 1
+            fixed_vertices[v3] = 1
+
+            face_vertices = [v1, v2, v3]
 
             for j in range(len(face_vertices)):
                 edge = (face_vertices[j], face_vertices[(j + 1) % len(face_vertices)])
 
+
                 # Ensure the edge is ordered consistently
-                if (edge[0], edge[1]) in edge_indices.keys():
-                    index = edge_indices[(edge[0], edge[1])]
-                    # fixed_edges[index] = 1
+                if (edge[0], edge[1]) not in edge_indices.keys():
+                    edge = (edge[1], edge[0])
 
-                elif (edge[1], edge[0]) in edge_indices.keys():
-                    index = edge_indices[(edge[1], edge[0])]
-                    # fixed_edges[index] = 1
+                if edge not in edge_indices.keys():
+                    exit(0)
 
-                else:
-                    # exit(0)
-                    print("error: selected  boundary condition is not part of the mesh")
+                index = edge_indices[edge]
+                fixed_edges[index] = 1
+
+            #while face_edges not in faces:
+            #    face_edges = [face_edges[1], face_edges[2], face_edges[0]]
+
+            #faces.remove(face_edges)       ////////////////////////////////////////////// still need to remove this face!!
+            #fixed_faces.append(face_edges)
+
 
 
 
     # Identify fixed vertices
-    fixed_vertices = [0] * len(mesh.Vertices)
     for edge in edge_indices.keys():
         if fixed_edges[edge_indices[edge]] == 1:
             fixed_vertices[edge[0]] = 1
-            fixed_vertices[edge[1]] = 1        
+            fixed_vertices[edge[1]] = 1
 
 
     # Create fixed faces
     edges_map = defaultdict(list)
     for edge in edge_indices:
-        if fixed_edges[edge_indices[edge]] == 1:
-            edges_map[edge[0]] = edge
+        if fixed_edges[edge_indices[edge]] == 1 and len(edge) == 2:
+            edges_map[edge[0]] = [edge[0], edge[1]]
     
     visited_edges = [0] * (len(edge_indices) + 1)
-    fixed_faces = []
+
 
     for edge in edge_indices:
         i = edge_indices[edge]
@@ -117,11 +130,16 @@ def get_mesh_data(mesh, holes):
             next_vertex = cur_edge[1]
             
             while 1:
-                next_edge = edges_map[next_vertex]   
+                print(next_vertex)
+                if next_vertex not in edges_map.keys():
+                    continue
+
+                next_edge = edges_map[next_vertex]
                 if next_edge == start_edge:
                     break
                 
-                next_edge_index = edge_indices[next_edge]    
+                print(next_edge)
+                next_edge_index = edge_indices[(next_edge[0], next_edge[1])]
                 face_edges.append(next_edge_index)
                 visited_edges[next_edge_index] = 1 
                 cur_edge = next_edge
