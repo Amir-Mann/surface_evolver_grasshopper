@@ -61,48 +61,6 @@ def get_mesh_data(mesh, holes):
         
         faces.append(face_edges)
 
-    # Get more boundary conditions
-    for holes_mesh in holes:
-        for i in range(holes_mesh.Faces.Count):
-            face = holes_mesh.Faces[i]
-            #print(holes_mesh.Vertices.Point3dAt(face.A))
-            #print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)])
-            #print(holes_mesh.Vertices.Point3dAt(face.B))
-            #print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)])
-            #print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)])
-
-            v1 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)]
-            v2 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)]
-            v3 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)]
-
-            fixed_vertices[v1] = 1
-            fixed_vertices[v2] = 1
-            fixed_vertices[v3] = 1
-
-            face_vertices = [v1, v2, v3]
-
-            for j in range(len(face_vertices)):
-                edge = (face_vertices[j], face_vertices[(j + 1) % len(face_vertices)])
-
-
-                # Ensure the edge is ordered consistently
-                if (edge[0], edge[1]) not in edge_indices.keys():
-                    edge = (edge[1], edge[0])
-
-                if edge not in edge_indices.keys():
-                    exit(0)
-
-                index = edge_indices[edge]
-                fixed_edges[index] = 1
-
-            #while face_edges not in faces:
-            #    face_edges = [face_edges[1], face_edges[2], face_edges[0]]
-
-            #faces.remove(face_edges)       ////////////////////////////////////////////// still need to remove this face!!
-            #fixed_faces.append(face_edges)
-
-
-
 
     # Identify fixed vertices
     for edge in edge_indices.keys():
@@ -112,10 +70,10 @@ def get_mesh_data(mesh, holes):
 
 
     # Create fixed faces
-    edges_map = defaultdict(list)
+    edges_map = defaultdict(tuple)
     for edge in edge_indices:
         if fixed_edges[edge_indices[edge]] == 1 and len(edge) == 2:
-            edges_map[edge[0]] = [edge[0], edge[1]]
+            edges_map[edge[0]] = edge
     
     visited_edges = [0] * (len(edge_indices) + 1)
 
@@ -130,30 +88,80 @@ def get_mesh_data(mesh, holes):
             next_vertex = cur_edge[1]
             
             while 1:
-                print(next_vertex)
+                #print(next_vertex)
                 if next_vertex not in edges_map.keys():
                     continue
 
                 next_edge = edges_map[next_vertex]
                 if next_edge == start_edge:
                     break
-                
-                print(next_edge)
-                next_edge_index = edge_indices[(next_edge[0], next_edge[1])]
+
+                #print(next_edge)
+                next_edge_index = edge_indices[next_edge]
                 face_edges.append(next_edge_index)
                 visited_edges[next_edge_index] = 1 
                 cur_edge = next_edge
                 next_vertex = next_edge[1]
                 
             fixed_faces.append(face_edges)
-    
+
+
+    # Get more boundary conditions
+    for holes_mesh in holes:
+        for i in range(holes_mesh.Faces.Count):
+            face = holes_mesh.Faces[i]
+            print(holes_mesh.Vertices.Point3dAt(face.A))
+            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)])
+            print(holes_mesh.Vertices.Point3dAt(face.B))
+            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)])
+            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)])
+
+            v1 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)]
+            v2 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)]
+            v3 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)]
+
+            fixed_vertices[v1] = 1
+            fixed_vertices[v2] = 1
+            fixed_vertices[v3] = 1
+
+            face_vertices = [v1, v2, v3]
+            face_edges = []
+
+            for j in range(len(face_vertices)):
+                edge = (face_vertices[j], face_vertices[(j + 1) % len(face_vertices)])
+
+                # Ensure the edge is ordered consistently
+                if edge in edge_indices.keys():
+                    face_edges.append(edge_indices[edge])
+
+                else:
+                    edge = (edge[1], edge[0])
+                    face_edges.append(-edge_indices[edge])
+
+                fixed_edges[edge_indices[edge]] = 1
+
+            if face_edges not in faces:
+                face_edges = [face_edges[1], face_edges[2], face_edges[0]]
+
+            if face_edges not in faces:
+                face_edges = [face_edges[1], face_edges[2], face_edges[0]]
+
+            if face_edges not in faces:
+                print("error face not found")
+
+            else:
+                faces.remove(face_edges)
+                fixed_faces.append(face_edges)
+
     return vertex_indices, fixed_vertices, edge_indices, fixed_edges, faces, fixed_faces
+
 
 def parse_mesh(mesh, holes):
     if mesh is None:
         return {}, [], {}, [], [], []
     
     return get_mesh_data(mesh, holes)
+
 
 def get_mesh_topology_for_fe(arguments):
     vertices, fixed_vertices, edges, fixed_edges, faces, fixed_faces = parse_mesh(arguments["input_mesh"], arguments["input_boundary_conditions"])
