@@ -1,0 +1,9 @@
+name: DGPcourse
+
+dependencies:
+  - python
+  - numpy
+  - toolz
+  - matplotlib
+  - dill
+  - pandas
