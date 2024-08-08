@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project]
+name = "half_edge"
+version = "0.0.1"
+authors = [
+    {name = "Santiago F. Caracciolo", email = "santiago.caracciolo@gmail.com"},
+]
+description = "An implementation of Half Edge Data Structure based on Open3D with basic operations such as split, collapse and flip edges."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "numpy<2.0.0",
+    "open3d==0.17",
+    "vector_tools @ git+https://github.com/sfcaracciolo/vector_tools.git"
+]
