@@ -230,8 +230,6 @@ def get_mesh_topology_for_fe(arguments):
     gemotry_text += 'N\n'  # Set target volume to actual volume
     gemotry_text += 'set edge color 4 where fixed\n'
 
-    
-    volume_estimate = (max_X - min_X) * (max_Y - min_Y) * (max_Z - min_Z)
-    return gemotry_text, volume_estimate
+    return gemotry_text, (max_X - min_X), (max_Y - min_Y), (max_Z - min_Z)
 
  
