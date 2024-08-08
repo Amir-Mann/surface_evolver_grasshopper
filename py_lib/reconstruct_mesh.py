@@ -69,6 +69,7 @@ def create_mesh(file_string):
                     full_faces.append((verts_id_to_index[edges_to_verts[edge1][0]],
                                        verts_id_to_index[edges_to_verts[edge2][0]],
                                        verts_id_to_index[edges_to_verts[edge3][0]]))
+
                 edge1, edge2, edge3 = items[1:4]
                 assert edges_to_verts[edge1][1] == edges_to_verts[edge2][0]
                 assert edges_to_verts[edge2][1] == edges_to_verts[edge3][0]
