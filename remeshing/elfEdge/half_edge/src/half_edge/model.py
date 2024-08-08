@@ -172,12 +172,12 @@ class HalfEdgeModel:
         return BiPoint.distance(vertices)
 
     def average_edge_length(self):
-        # compute avg. edge length only of referenced edges
+        # compute average edge length only of referenced edges
         edge_lengths = []
         seen_edges = set()
         for h_index in range(len(self.half_edges)):
             if h_index in self.unreferenced_half_edges or h_index in seen_edges:
-                continue
+                continue        
             edge_lengths.append(self.edge_len(h_index))
             seen_edges.add(h_index)
             seen_edges.add(self.get_twin_index(h_index))
@@ -237,6 +237,99 @@ class HalfEdgeModel:
 
     # half edge basic operations 
 
+    def edge_split_boundary(self, h0_index:int):
+        h0_twin = self.get_twin_index(h0_index)
+        assert h0_twin==-1, f"edge_split_boundary({h0_index}) called with he_{h0_index}.twin={h0_twin}"
+        E = self.amount_of_half_edges()
+        T = self.amount_of_triangles()
+        V = self.amount_of_vertices()
+        
+        # get data
+        
+        h1_index = self.get_next_index(h0_index)
+        h2_index = self.get_next_index(h1_index)
+        
+        t0_index = self.get_triangle_index(h0_index)
+        
+        v0_index, v2_index = self.get_vertex_indices(h0_index)
+        _, v3_index = self.get_vertex_indices(h1_index)
+        
+        # create new indices
+        h6_index = E+0
+        h7_index = E+1
+        h12_index = E+2
+        h13_index = E+3
+        
+        t2_index = T+0
+        t5_index = T+1
+        
+        v4_index = V+0
+        
+        # create new half edges
+        
+        h6 = self.create_half_edge(
+            next=h7_index,
+            triangle_index=t2_index,
+            twin=-1,
+            vertex_indices=[v0_index,v4_index]
+        )
+        h7 = self.create_half_edge(
+            next=h2_index,
+            triangle_index=t2_index,
+            twin=h12_index,
+            vertex_indices=[v4_index,v3_index]
+        )
+        h12 = self.create_half_edge(
+            next=h13_index,
+            triangle_index=t5_index,
+            twin=h7_index,
+            vertex_indices=[v3_index,v4_index]
+        )
+        h13 = self.create_half_edge(
+            next=h1_index,
+            triangle_index=t5_index,
+            twin=-1,
+            vertex_indices=[v4_index,v2_index]
+        )
+        
+        # create new triangles
+        t2 = np.array([v4_index, v3_index, v0_index])
+        t5 = np.array([v4_index, v2_index, v3_index])
+        
+        # create new vertex
+        vertices = self.get_vertices_by_indices([v0_index, v2_index])
+        v4 = BiPoint.midpoint(vertices)
+        
+        # update half edges
+        self.update_half_edge(
+            h1_index,
+            next=h12_index,
+            triangle_index=t5_index
+        )
+        self.update_half_edge(
+            h2_index,
+            next=h6_index,
+            triangle_index=t2_index
+        )
+        
+        # insert new half edges
+        self.half_edges += [h6, h7, h12, h13]
+        
+        # insert new triangles
+        self.triangles.extend([t2, t5])
+        
+        # insert new vertex
+        self.vertices.append(v4)
+        
+        # save unreferenced half edges
+        self.unreferenced_half_edges.extend([h0_index])
+        
+        # save unreferenced triangles
+        self.unreferenced_triangles.extend([t0_index])
+        
+        
+        
+    
     def edge_split(self, h0_index:int):
 
         E = self.amount_of_half_edges()
