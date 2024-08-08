@@ -13,7 +13,9 @@ RIGHT_QURLY_BRACKET = r"}"
 ## Optimization ##
 
 def get_fe_str(arguments):
-    fe_file_str, estimated_volume = get_mesh_topology_for_fe(arguments)
+    fe_file_str, x_length, y_length, z_length = get_mesh_topology_for_fe(arguments)
+    estimated_volume = x_length * y_length * z_length
+    initial_target_length = (x_length ** 2 + y_length ** 2 + z_length ** 2) ** 0.5 / 5
 
     fe_file_str += f"read // Take and run SE commands from this file\n"
     fe_file_str += f"G 0; //\n"
@@ -23,16 +25,21 @@ def get_fe_str(arguments):
 
     fe_file_str += f"optimize_step := {LEFT_QURLY_BRACKET} g; // A general function looking for minimum\n"
     fe_file_str += f"    g {arguments['G_INPUT']};\n"
-    fe_file_str += f"    t .2;\n"
-    fe_file_str += f"    V 5;\n"
     fe_file_str += f"    hessian_seek;\n"
     fe_file_str += f"    hessian_seek;\n"
     fe_file_str += f"    o;\n"
     fe_file_str += f"{RIGHT_QURLY_BRACKET}\n"
+    fe_file_str += f"target_length := {initial_target_length:.2f};\n"
+    fe_file_str += f"remesh_step := {LEFT_QURLY_BRACKET}t target_length/16*9; l target_length/16*25; V 2; u{RIGHT_QURLY_BRACKET}\n"
 
     if not arguments['INTER_ACTIVE']:
         for r in range(arguments['R_INPUT']):
-            fe_file_str += "r; // refine edges \n" if r != 0 else ""#"u; // equiangulation, tries to polish up the triangulation.\n"
+            if r != 0:
+                fe_file_str += "remesh_step; remesh_step;\n"
+                fe_file_str += "target_length := target_length / 2;\n"
+                fe_file_str += "remesh_step; remesh_step;\n"
+            else:
+                fe_file_str += "remesh_step; remesh_step;\n"
             fe_file_str += "optimize_step;\n"
 
         fe_file_str += f"g {arguments['G_INPUT']}; // finall settling down\n"
