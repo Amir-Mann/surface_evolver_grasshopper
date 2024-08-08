@@ -73,3 +73,6 @@ def create_mesh(file_string):
 
 def reconstruct_mesh(arguments, results_text):
     arguments['result_mesh']['verts'], arguments['result_mesh']['faces'] = create_mesh(results_text)
+    import json
+    with open(r"C:\Evolver\surface_evolver_grasshopper\remeshing\samples\sample1.json", "w") as s:
+        json.dump(arguments['result_mesh'], s)

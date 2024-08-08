@@ -1,0 +1,66 @@
+ps_fine_mesh_conv_setting := 	{
+								resolution_idx := 2;
+								length_threshold_max_old := length_threshold_max;
+								length_threshold_max := base_max_edge_length*edge_length_factor/4;
+								error_ori_old := error_ori;
+								error_exp := -6;
+								set_error;
+								print error;
+								if error_ori_old != error_ori then {converg_idx :=2};
+								if vertex_number_old != vertex_number then {converg_idx :=1};
+								if length_threshold_max_old  != length_threshold_max then {converg_idx :=1};
+								printf "  Fine mesh convergence operation\n"
+								}
+								
+//jig_idx := 0;
+//constr_adj_idx := 0; 
+//halve_cl_edge_inx := 0;
+//vert_fix_idx := 0; 
+//saving_png_inx := 0;
+//hessian_M_idx := 1;
+//hessian_seek_idx := 1;
+//hessian_idx := 1;
+//eigenvalue_study_idx := 1;
+//bond_eigenvalue_print_idx := 0;
+//do_dump_inx := 0;
+//goIterationLogIdx := 0;
+
+/*
+length_threshold := 0.8
+mesh_smooth
+convergence_scheme
+mesh_smooth
+convergence_scheme
+get_equilibrium
+r
+length_threshold := 0.4
+error_exp := -4
+set_error
+mesh_smooth
+convergence_scheme
+mesh_smooth
+convergence_scheme
+get_equilibrium
+r
+length_threshold := 0.2
+error_exp := -5
+set_error
+mesh_smooth
+convergence_scheme
+mesh_smooth
+convergence_scheme
+get_equilibrium
+r
+//lead_edge_refinement
+length_threshold := 0.1
+error_exp := -6
+set_error
+mesh_smooth
+convergence_scheme
+mesh_smooth
+convergence_scheme
+get_equilibrium
+*/
+
+								
+								

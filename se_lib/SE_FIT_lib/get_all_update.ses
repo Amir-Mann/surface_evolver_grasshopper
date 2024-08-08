@@ -1,0 +1,7 @@
+//get_all_update.ses: get all information updated
+
+get_all_update := {get_stats;
+				   histogram_update;
+				   get_par_update;
+				   }
+					

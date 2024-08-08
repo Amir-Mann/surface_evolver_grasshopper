@@ -1,0 +1,13 @@
+// This is typically set up for the free surface
+// of a gas bubble whose initial volume is generally small
+// which is to grow to a larger value during the initialization
+// in e.g. closed container.
+fill_fraction_initialize := {while (fill_fraction - fill_fraction_ini > 0.1 ) do 
+                                {printf "fill_fraction: %f\n", fill_fraction;
+                                 convergence_scheme; 
+                                 fill_fraction -= 0.025; 
+                                 body[1].target := (1-fill_fraction)*vol_total
+                                };
+                             fill_fraction := fill_fraction_ini;
+                             body[1].target := (1-fill_fraction)*vol_total
+                            }

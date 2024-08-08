@@ -1,0 +1,53 @@
+// It is a good practice to roughen the mesh in between the runs
+// during PSF PS operation. The lower limit for the mesh roughening
+// is controlled with the facet area
+// The factor 30 is used based on observation
+// that a rough mesh has about 14 facets per unit area 
+// April 21, 2016, Y Chen
+
+psf_roughen_mesh_between_runs := 	{
+									 while (count(facet where not fixed, id) > 30*ceil(sum(facet where not fixed, area))) do
+										{t (max(edge where not fixed, length)+ min(edge where not fixed, length))/2;
+										 length_threshold := max(edge where not fixed, length);
+										 do_mesh_refine_action_idx := 0;
+										 error := 1e-3;
+										 error_e := 1e-3;
+										 convergence_scheme;
+										 do_mesh_refine_action_idx := 1;
+										};
+									 length_threshold:= max(edge where not fixed, length)
+									}
+									
+// The lower limit for the mesh roughening
+// is controlled with the initial vertex count when the fe file
+// is first loaded, which normally has a very rough mesh and can
+// serve as a good reference point. The factor 5 is used based on observation
+// that with a rough mesh close to the initial mesh, a roughening operaiton
+// can reduce the number of vertex by a factor of approximately 4.
+// April 8, 2016, Y Chen									
+					
+// psf_roughen_mesh_between_runs := 	{local x_dim;
+									 // local y_dim;
+									 // local z_dim;
+									 // local aspect_ratio;
+									 // x_dim := max(vertex where not fixed, x) - min(vertex where not fixed, x);
+									 // y_dim := max(vertex where not fixed, y) - min(vertex where not fixed, y);
+									 // if space_dimension == 3 then
+										// {z_dim := max(vertex where not fixed, z) - min(vertex where not fixed, z);
+										// };
+									 // if space_dimension == 3 then
+										// {aspect_ratio := maximum(maximum(x_dim, y_dim),z_dim)/minimum(minimum(x_dim, y_dim),z_dim);
+										// }
+									 // else
+										// {aspect_ratio := maximum(x_dim, y_dim)/minimum(x_dim, y_dim);
+										// };
+									 // while (count(vertex where not fixed, id) > 3*ceil(aspect_ratio/initial_aspect_ratio)*initial_vertex_count) do
+										// {t (max(edge where not fixed, length)+ min(edge where not fixed, length))/2;
+										 // length_threshold:= max(edge where not fixed, length);
+										 // do_mesh_refine_action_idx := 0;
+										 // convergence_scheme;
+										 // do_mesh_refine_action_idx := 1;
+										// };
+									 // length_threshold:= max(edge where not fixed, length)
+									// }
+									

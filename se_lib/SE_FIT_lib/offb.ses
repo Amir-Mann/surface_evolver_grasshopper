@@ -1,0 +1,42 @@
+// offb.cmd
+// Surface Evolver command to print OFF file in a modified
+// binary format.  Difference is each facet is followed by
+// one color index integer rather than integer plus color components.
+// usage:
+//   do_offb >>> "filename.offb"
+
+define vertex attribute off_number integer
+do_offb := {
+   local inx,fcount,ecount;
+
+   // Consecutive index numbers for vertices
+   inx := 0;
+   foreach vertex vv do 
+   { vv.off_number := inx;
+     inx += 1;
+   };
+   fcount := sum(facet,show);
+   ecount := sum(edge,show);
+
+   // file header is ascii
+   printf "OFF BINARY\n";
+   binary_printf "%ld%ld%ld",vertex_count,fcount,ecount;
+
+   // vertex list
+	foreach vertex do { binary_printf "%f%f%f",x,y,z };
+  
+
+   // triangle list
+   foreach facet ff where ff.show do 
+   { binary_printf "%ld",3;
+     foreach ff.vertex vv do binary_printf "%ld",vv.off_number;
+     binary_printf "%ld",ff.color;
+   };
+
+   // edge list
+   foreach edge ee where ee.show do 
+   { binary_printf "%ld",2;
+     foreach ee.vertex vv do binary_printf "%ld",vv.off_number;
+     binary_printf "%ld",ee.color;
+   };
+}

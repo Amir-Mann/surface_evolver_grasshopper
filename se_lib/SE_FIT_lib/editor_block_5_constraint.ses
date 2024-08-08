@@ -1,0 +1,11 @@
+constraint name [{nonpositive|nonnegative}] [convex] [global]
+formula: F(x,y,z)
+energy:
+e1: 0
+e2: 0
+e3: 0
+content:
+c1: 0
+c2: 0
+c3: 0
+

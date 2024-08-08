@@ -1,0 +1,5 @@
+ clip_coeff[1][1] := 0;
+ clip_coeff[1][2] := -1;
+ clip_coeff[1][3] := 0;
+ clip_coeff[1][4] := 0;
+ clip_view;

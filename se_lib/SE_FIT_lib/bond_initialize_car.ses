@@ -1,0 +1,182 @@
+// the file is read in frmBodyEnergySetup
+bond_initialize_inc := {if bond_x_ini >= 0 then
+							{while (bond_x_ini - bond_x > 0.05) do
+								{printf "bond_x: %f\n", bond_x;
+								 convergence_scheme;
+								 if bond_x < 0.1 then
+									{bond_x += 0.05
+									}
+								 else
+									{if bond_x < 1 then
+										{bond_x += 0.1
+										}
+									 else
+										{if bond_x < 10 then
+											{bond_x += 1
+											}
+										 else
+											{bond_x += 5
+											}
+										}
+									}
+								};
+							 bond_x := bond_x_ini;
+							};
+						if bond_x_ini < 0 then
+							{while (bond_x - bond_x_ini > 0.05) do
+								{printf "bond_x: %f\n", bond_x;
+								 convergence_scheme;
+								 if bond_x > -0.1 then
+									{bond_x -= 0.05
+									}
+								 else
+									{if bond_x > -1 then
+										{bond_x -= 0.1
+										}
+									 else
+										{if bond_x > -10 then
+											{bond_x -= 1
+											}
+										 else
+											{bond_x -= 5
+											}
+										}
+									}
+								};
+							 bond_x := bond_x_ini;
+							};
+						 if bond_y_ini >= 0 then
+							{while (bond_y_ini - bond_y > 0.05) do
+								{printf "bond_y: %f\n", bond_y;
+								 convergence_scheme;
+								 if bond_y < 0.1 then
+									{bond_y += 0.05
+									}
+								 else
+									{if bond_y < 1 then
+										{bond_y += 0.1
+										}
+									 else
+										{if bond_y < 10 then
+											{bond_y += 1
+											}
+										 else
+											{bond_y += 5
+											}
+										}
+									}
+								};
+							 bond_y := bond_y_ini;
+							};
+						 if bond_y_ini < 0 then
+							{while (bond_y - bond_y_ini > 0.05) do
+								{printf "bond_y: %f\n", bond_y;
+								 convergence_scheme;
+								 if bond_y > -0.1 then
+									{bond_y -= 0.05
+									}
+								 else
+									{if bond_y > -1 then
+										{bond_y -= 0.1
+										}
+									 else
+										{if bond_y > -10 then
+											{bond_y -= 1
+											}
+										 else
+											{bond_y -= 5
+											}
+										}
+									}
+								};
+							 bond_y := bond_y_ini;
+							};
+						 if bond_z_ini >= 0 then
+							{while (bond_z_ini - bond_z > 0.05) do
+								{printf "bond_z: %f\n", bond_z;
+								 convergence_scheme;
+								 if bond_z < 0.1 then
+									{bond_z += 0.05
+									}
+								 else
+									{if bond_z < 1 then
+										{bond_z += 0.1
+										}
+									 else
+										{if bond_z < 10 then
+											{bond_z += 1
+											}
+										 else
+											{bond_z += 5
+											}
+										}
+									}
+								};
+							 bond_z := bond_z_ini;
+							};
+						if bond_z_ini < 0 then
+							{while (bond_z - bond_z_ini > 0.05) do
+								{printf "bond_z: %f\n", bond_z;
+								 convergence_scheme;
+								 if bond_z > -0.1 then
+									{bond_z -= 0.05
+									}
+								 else
+									{if bond_z > -1 then
+										{bond_z -= 0.1
+										}
+									 else
+										{if bond_z > -10 then
+											{bond_z -= 1
+											}
+										 else
+											{bond_z -= 5
+											}
+										}
+									}
+								};
+							 bond_z := bond_z_ini;
+							};
+						 convergence_scheme;
+						}
+					
+bond_initialize_do_inc := 0
+
+bond_initialize := {if bond_initialize_do_inc == 1 then
+						{bond_initialize_inc}
+					else
+						{bond_x := bond_x_ini;
+						 bond_y := bond_y_ini;
+						 bond_z := bond_z_ini;
+						 /* convergence_scheme; */
+						}
+					}					
+
+					
+//while ( bond_ini-bond > 0.05 ) do 
+//	{printf "bond: %f\n ", bond; 
+//	 convergence_scheme; 
+//	  if bond < 0.1 then 
+//		{bond := bond + 0.05;
+//		 bond_component (bond);
+//		}  
+//	  else 
+//		{if bond< 1 then 
+//			{bond := bond + 0.1;
+//			 bond_component (bond);
+//			}
+//		 else 
+//			{if bond < 10 then 
+//				{bond := bond + 1;
+//				 bond_component (bond);
+//				} 
+//			 else 
+//				{bond := bond + 5;
+//				 bond_component (bond);
+//				}
+//			}
+//		}
+//	};
+//	bond_x := bond_x_ini;
+//	bond_y := bond_y_ini;
+//	bond_z := bond_z_ini

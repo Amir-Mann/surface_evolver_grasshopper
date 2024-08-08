@@ -1,0 +1,109 @@
+// bond_inc_run.ses
+// Added 12/20/09 'bond' is reserved in SE-FIT for closed containers.
+
+if is_defined("bond") == 0 then {bond := 0} /* For syntax purpose such that the script can be loaded for non-container geometries */
+bond_old := bond
+bond_new := bond				  
+bond_inc_run := {
+	 bond := bond_old;
+	 if bond_new > bond_old then 
+		{while (bond_new - bond >= 0.1 ) do 
+			{printf "bond: %f\n", bond;
+			 {V; u};
+			 convergence_scheme; 
+			 if bond >= 0 then
+				{
+				 if bond < 0.1 then
+					{bond += 0.05
+					}
+				 else
+					{if bond < 1 then
+						{bond += 0.1
+						}
+					 else
+						{if bond < 10 then
+							{bond += 1
+							}
+						 else
+							{bond += 5
+							}
+						}
+					}
+				}
+			 else
+				{
+				 if bond > -0.1 then
+					{bond += 0.05
+					}
+				 else
+					{if bond > -1 then
+						{bond += 0.1
+						}
+					 else
+						{if bond > -10 then
+							{bond += 1
+							}
+						 else
+							{bond += 5
+							}
+						}
+					};
+				}
+			};
+		 bond := bond_new;	
+		 printf "bond: %f\n", bond;
+		 {V; u};
+		 convergence_scheme; 
+		 bond_old := bond
+		};
+	 if bond_new < bond_old then
+		{while (bond - bond_new >= 0.1 ) do 
+			{if bond <= 0 then
+				{
+				 if bond > -0.1 then
+					{bond += -0.05
+					}
+				 else
+					{if bond > -1 then
+						{bond += -0.1
+						}
+					 else
+						{if bond > -10 then
+							{bond += -1
+							}
+						 else
+							{bond += -5
+							}
+						}
+					};
+				}
+			 else
+				{
+				 if bond < 0.1 then
+					{bond += -0.05
+					}
+				 else
+					{if bond < 1 then
+						{bond += -0.1
+						}
+					 else
+						{if bond < 10 then
+							{bond += -1
+							}
+						 else
+							{bond += -5
+							}
+						}
+					}
+				};
+			 printf "bond: %f\n", bond;
+			 {V; u};
+			 convergence_scheme; 
+			};
+		 bond := bond_new;	
+		 printf "bond: %f\n", bond;
+		 {V; u};
+		 convergence_scheme;
+         bond_old := bond 
+		}
+	}

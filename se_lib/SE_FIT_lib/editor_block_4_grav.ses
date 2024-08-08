@@ -1,0 +1,6 @@
+quantity grav energy method facet_vector_integral
+vector_integrand:
+q1: 0
+q2: 0
+q3: -Bond*(GX*x*z + GY*y*z + GZ*z^2/2) 
+

@@ -1,0 +1,48 @@
+//shift_surface.ses (surface evolver scripts)
+//Author: Yongkang Chen
+//  Date: 1/12/2015
+
+procedure shift_surface ( real delta_x, real delta_y, real delta_z )
+    {define constr_list integer[50];
+	 if high_constraint > 0 then
+		{
+		 foreach facet ff  do {
+			constr_list := ff.__f_constraint_list;
+			if constr_list[1] > 0 then
+				{
+				 while ff.__f_constraint_list[1] >0 
+				 do {unset ff constraint ff.__f_constraint_list[2]};
+				}
+			};
+		 foreach edge ee  do {
+			constr_list := ee.__e_constraint_list;
+			if constr_list[1] > 0 then
+				{
+				 while ee.__e_constraint_list[1] >0 
+				 do {unset ee constraint ee.__e_constraint_list[2]};
+				}
+			};
+		 foreach vertex vv  do {
+			constr_list := vv.__v_constraint_list;
+			if constr_list[1] > 0 then
+				{
+				 while vv.__v_constraint_list[1] >0 
+				 do {unset vv constraint vv.__v_constraint_list[2]};
+				};
+			vv.x := vv.x + delta_x;
+			vv.y := vv.y + delta_y;
+			vv.z := vv.z + delta_z;    
+			};
+		}
+	 else
+		{
+		 foreach vertex vv  do {
+			vv.x := vv.x + delta_x;
+			vv.y := vv.y + delta_y;
+			vv.z := vv.z + delta_z;    
+			};
+		
+		}
+    }
+
+

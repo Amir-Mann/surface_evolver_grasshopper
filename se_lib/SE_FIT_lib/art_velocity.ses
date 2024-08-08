@@ -1,0 +1,64 @@
+// art_velocity.cmd
+// Evolver command to evaluate an artificial velocity on each vertex on a constraint 
+
+// Programmer: Yongkang Chen, yongkang@cecs.pdx.edu 
+
+// Usage: do_art_vel(layer_inx)
+
+define vertex attribute __v_artv real[3]  // artificial velocity, don't have to do this if __v_velocity is not read_only
+define vel real[3]
+artv_weight_factor := 0.7
+
+procedure do_art_vel (integer layer_inx) 
+{
+	foreach vertex vv where layer == 2 do
+			{local inx; local vel_mag_sum; local vel_mag_sum_mean; local vel_sum_mag;
+			 for (inx :=1; inx< vv.__v_neighbour_list[1]+1; inx+=1)
+			 {
+				local v_1; local v_2; local v_3;
+				v_1 := vertex[vv.__v_neighbour_list[inx+1]].__velocity[1];
+				v_2 := vertex[vv.__v_neighbour_list[inx+1]].__velocity[2];
+				v_3 := vertex[vv.__v_neighbour_list[inx+1]].__velocity[3];
+				vel[1]:=vel[1]+v_1*scale;
+				vel[2]:=vel[2]+v_2*scale;
+				vel[3]:=vel[3]+v_3*scale;
+				vel_mag_sum := vel_mag_sum+ scale*sqrt(v_1^2+v_2^2+v_3^2);
+			 };
+			 vel_mag_sum_mean := vel_mag_sum/vv.__v_neighbour_list[1];
+			 vel_sum_mag := sqrt(vel[1]^2+vel[2]^2+vel[3]^2);
+			 vv.__v_artv[1] := artv_weight_factor*vel[1]/vel_sum_mag*vel_mag_sum_mean;
+			 vv.__v_artv[2] := artv_weight_factor*vel[2]/vel_sum_mag*vel_mag_sum_mean;
+			 vv.__v_artv[3] := artv_weight_factor*vel[3]/vel_sum_mag*vel_mag_sum_mean;
+			 vv.x := vv.x + vv.__v_artv[1];
+			 vv.y := vv.y + vv.__v_artv[2];
+			 vv.z := vv.z + vv.__v_artv[3];
+			 vel[1]:=0; vel[2] := 0; vel[3] := 0; vel_mag_sum := 0;  
+			};
+		for ( l_inx:= 3; l_inx < layer_inx-1; l_inx +=1)
+		{foreach vertex vv where layer == l_inx do
+			{local inx; local vel_mag_sum; local vel_mag_sum_mean; local vel_sum_mag;
+			 for (inx :=1; inx< vv.__v_neighbour_list[1]+1; inx+=1)
+				{
+					local v_1; local v_2; local v_3;
+					v_1 := vertex[vv.__v_neighbour_list[inx+1]].__v_artv[1];
+					v_2 := vertex[vv.__v_neighbour_list[inx+1]].__v_artv[2];
+					v_3 := vertex[vv.__v_neighbour_list[inx+1]].__v_artv[3];
+					vel[1]:=vel[1]+v_1;
+					vel[2]:=vel[2]+v_2;
+					vel[3]:=vel[3]+v_3;
+					vel_mag_sum := vel_mag_sum+ sqrt(v_1^2+v_2^2+v_3^2);
+				 };
+				 vel_mag_sum_mean := vel_mag_sum/vv.__v_neighbour_list[1];
+				 vel_sum_mag := sqrt(vel[1]^2+vel[2]^2+vel[3]^2);
+				 vv.__v_artv[1] := (artv_weight_factor)*vel[1]/vel_sum_mag*vel_mag_sum_mean;
+				 vv.__v_artv[2] := (artv_weight_factor)*vel[2]/vel_sum_mag*vel_mag_sum_mean;
+				 vv.__v_artv[3] := (artv_weight_factor)*vel[3]/vel_sum_mag*vel_mag_sum_mean;
+				 vv.x := vv.x + vv.__v_artv[1];
+				 vv.y := vv.y + vv.__v_artv[2];
+				 vv.z := vv.z + vv.__v_artv[3];
+				 vel[1]:=0; vel[2] := 0; vel[3] := 0; vel_mag_sum := 0;  
+			}
+		}
+                  }
+
+

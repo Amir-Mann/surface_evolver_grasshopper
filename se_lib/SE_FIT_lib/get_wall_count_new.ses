@@ -1,0 +1,108 @@
+// get_wall_count.ses
+// -- to 
+
+// Programmer: Yongkang Chen, yongkang@cecs.pdx.edu
+
+// Usage: get_wall_count ()
+// The procedures calls get_facet_normal_vector() to get the normal vector and distance to the origin for all facets.
+// It then compares the normal vectors and the distance to identify the number of distinguished facets that is also the
+// the number of wall constraitns.
+// Note: facet_count is an Evolver interior read_only variable.
+ 
+define cf_coef_x_arr real[facet_count]
+define cf_coef_y_arr real[facet_count]
+define cf_coef_z_arr real[facet_count]
+define cf_constant_arr real[facet_count]
+define dir_cos_alpha_arr real[facet_count]
+define dir_cos_beta_arr real[facet_count]
+define dir_cos_gamma_arr real[facet_count]
+define dist_quant_p_arr real[facet_count]
+define facet_id integer[facet_count]
+
+//dir_cos_alpha := 0
+//dir_cos_beta := 0
+//dir_cos_gamma := 0
+//dist_quant_p := 0
+
+wall_count := 0
+
+procedure get_wall_count ()
+	{area_base := 0;
+	 for (idx := 1; idx < facet_count + 1; idx += 1)
+		{
+		 facet_id[idx] := idx;
+		 get_facet_normal_vector (idx);
+		 cf_coef_x_arr[idx] := cf_coef_x;
+		 cf_coef_y_arr[idx] := cf_coef_y;
+		 cf_coef_z_arr[idx] := cf_coef_z;
+		 cf_constant_arr[idx] := cf_constant;
+		 dir_cos_alpha_arr[idx] := dir_cos_alpha;
+		 dir_cos_beta_arr[idx] := dir_cos_beta;
+		 dir_cos_gamma_arr[idx] := dir_cos_gamma;
+		 dist_quant_p_arr[idx] := dist_quant_p;
+		};
+	 for (idx := 1; idx < facet_count + 1; idx += 1)
+		{if dir_cos_gamma_arr[idx] == -1 then
+			{area_base += facet[idx].area
+			}
+		};
+	 initial_id := 1;
+	 id_max := facet_count;
+	 while (initial_id < id_max) do 
+		{
+		 for (idx := initial_id + 1; idx < id_max + 1; idx += 1)
+			{if initial_id == 9 then 
+				{print dir_cos_alpha_arr[initial_id]*dir_cos_alpha_arr[idx] + dir_cos_beta_arr[initial_id]*dir_cos_beta_arr[idx] + dir_cos_gamma_arr[initial_id]*dir_cos_gamma_arr[idx];
+				 print dist_quant_p_arr[initial_id] - dist_quant_p_arr[idx]
+				};
+			 if dir_cos_alpha_arr[initial_id]*dir_cos_alpha_arr[idx] + dir_cos_beta_arr[initial_id]*dir_cos_beta_arr[idx] + dir_cos_gamma_arr[initial_id]*dir_cos_gamma_arr[idx] == 1 then
+				{if dist_quant_p_arr[initial_id] - dist_quant_p_arr[idx] < 1e-6 then
+					{/* print initial_id; */
+					 /* print idx; */
+					 /* print dir_cos_alpha_arr[initial_id]*dir_cos_alpha_arr[idx] + dir_cos_beta_arr[initial_id]*dir_cos_beta_arr[idx] + dir_cos_gamma_arr[initial_id]*dir_cos_gamma_arr[idx]; */ 
+					 facet_id[idx] := 0;
+					};
+				};
+			};
+		 initial_id += 1;
+		};
+	 for (idx := 1; idx < facet_count + 1; idx += 1)
+		{
+		 if facet_id[idx] != 0 then
+			{wall_count  += 1
+			}
+		};
+	 define wall_id integer[wall_count];
+	 define wall_cf_coef_x real[wall_count];
+	 define wall_cf_coef_y real[wall_count];
+	 define wall_cf_coef_z real[wall_count];
+	 define wall_cf_constant real[wall_count];
+	 define wall_dir_cos_alpha real[wall_count];
+	 define wall_dir_cos_beta real[wall_count];
+	 define wall_dir_cos_gamma real[wall_count];
+	 define wall_dist_quant_p real[wall_count];
+	 idx_in := 1;
+	 for (idx := 1; idx < facet_count + 1; idx += 1)
+		{
+		 if facet_id[idx] != 0 then
+			{wall_id[idx_in] := facet_id[idx];
+			 wall_cf_coef_x[idx_in] := cf_coef_x_arr[idx];
+			 wall_cf_coef_y[idx_in] := cf_coef_y_arr[idx];
+			 wall_cf_coef_z[idx_in] := cf_coef_z_arr[idx];
+			 wall_cf_constant[idx_in] := cf_constant_arr[idx];
+			 wall_dir_cos_alpha[idx_in] := dir_cos_alpha_arr[idx];
+			 wall_dir_cos_beta[idx_in] := dir_cos_beta_arr[idx];
+			 wall_dir_cos_gamma[idx_in] := dir_cos_gamma_arr[idx];
+			 wall_dist_quant_p[idx_in] := dist_quant_p_arr[idx];
+			 idx_in += 1;
+			}
+		};
+	 printf "wall_id\n";
+	 print wall_id;
+	}
+
+					 
+
+
+
+

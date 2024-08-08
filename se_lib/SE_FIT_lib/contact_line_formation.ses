@@ -1,0 +1,133 @@
+// contact_line_formation.ses
+// Programmer: Yongkang Chen, yongkang@cecs.pdx.edu
+// For the scenario where the free surface hits a solid wall to form a wet/dry region
+// 11/29/2010
+//
+// Usage: contact_line_formation (id_1, id_2, id_3, id_4)
+// 		id_1: id of the constraint without energy integral
+//		id_2: id of the one-side constraint
+// 		id_3: id of the constraint with energy integral
+// 		id_4: id of the constraint with energy integral but with opposite sign for edges with opposite orientation  
+
+procedure contact_line_formation ( integer wall_constr_id, integer wall_limit_constr_id, integer wall_cl_constr_id_1, integer wall_cl_constr_id_2 ) 
+		      {
+			foreach facet ff where on_constraint wall_constr_id do
+				{ 
+				 unset ff.vertex[1] constraint wall_limit_constr_id;
+				 set ff.vertex[1] constraint wall_constr_id;
+				 unset ff.vertex[2] constraint wall_limit_constr_id;
+				 set ff.vertex[2] constraint wall_constr_id; 
+				 unset ff.vertex[3] constraint wall_limit_constr_id;
+				 set ff.vertex[3] constraint wall_constr_id; 
+				 unset ff.edge[1] constraint wall_limit_constr_id;
+				 set ff.edge[1] constraint wall_cl_constr_id_1; 
+				 unset ff.edge[2] constraint wall_limit_constr_id;
+				 set ff.edge[2] constraint wall_cl_constr_id_1; 
+				 unset ff.edge[3] constraint wall_limit_constr_id;
+				 set ff.edge[3] constraint wall_cl_constr_id_1; 
+				 dissolve ff;
+				};
+			dissolve edge where not fixed;
+			dissolve vertices;
+			local edg_count; 
+			local y_max; 
+			local ver_max_id; 
+			local edg_min_id; 
+			local nei_edg_id; 
+			local ginx; 
+                 	edg_count := count(edge where not fixed and on_constraint wall_cl_constr_id_1, id);
+                 	y_max := max(vertex where not fixed and on_constraint wall_constr_id, y);
+                 	ver_max_id := min(vertex where not fixed and on_constraint wall_constr_id and y==y_max,id);
+                 	edg_min_id := min(vertex[ver_max_id].edge where on_constraint wall_cl_constr_id_1, id); 
+			print edg_min_id;
+                 	if edge[edg_min_id].vertex[1].x > edge[edg_min_id].vertex[2].x then
+			 	{reverse_orientation edge[edg_min_id];
+				 unset edge[edg_min_id] constraint wall_cl_constr_id_1;
+				 set edge[edg_min_id] constraint wall_cl_constr_id_2;
+				};
+                 	for (ginx := 1; ginx < edg_count; ginx += 1)
+                    		{print ginx;
+                     	 foreach edge ee where on_constraint wall_cl_constr_id_1 and ee.id != edg_min_id do
+					{if ee.vertex[1].id == edge[edg_min_id].vertex[2].id then 
+						{nei_edg_id := ee.id};
+                           		 if ee.vertex[2].id == edge[edg_min_id].vertex[2].id then 
+						{reverse_orientation ee; 
+						 unset ee constraint wall_cl_constr_id_1;
+					 	 set ee constraint wall_cl_constr_id_2;
+						 nei_edg_id := ee.id; 
+						 set ee.facet color lightblue;
+						};
+                          		};
+                     	 edg_min_id := nei_edg_id; 
+				 print edg_min_id;
+                   		};
+			}
+
+procedure contact_line_formation_old ( integer wall_constr_id, integer wall_limit_constr_id, integer wall_cl_constr_id_1, integer wall_cl_constr_id_2 ) 
+		      {
+			local x_mean;
+			local y_mean;
+			local cent_dist;
+			local dist_min;
+			local target_f_id;
+			dist_min := sqrt(max(vertex,x)^2 + max(vertex,y)^2);
+			/* first, look for the facet that is closest to the origin of the x-y coordinate system */
+			foreach facet ff where on_constraint wall_constr_id do
+				{x_mean := 1/3*(ff.vertex[1].x + ff.vertex[2].x + ff.vertex[3].x);
+				 y_mean := 1/3*(ff.vertex[1].y + ff.vertex[2].y + ff.vertex[3].y);
+				 cent_dist := sqrt(x_mean^2 + y_mean^2);
+				 dist_min := minimum(dist_min, cent_dist);
+				 if cent_dist == dist_min then
+					{target_f_id := ff.id;
+					}
+				};
+			set facet[target_f_id].vertex[1] constraint wall_constr_id; 
+			unset facet[target_f_id].vertex[1] constraint wall_limit_constr_id;
+			set facet[target_f_id].vertex[2] constraint wall_constr_id; 
+			unset facet[target_f_id].vertex[2] constraint wall_limit_constr_id;
+			set facet[target_f_id].vertex[3] constraint wall_constr_id; 
+			unset facet[target_f_id].vertex[3] constraint wall_limit_constr_id;
+			set facet[target_f_id].edge[1] constraint wall_cl_constr_id_1; 
+			unset facet[target_f_id].edge[1] constraint wall_limit_constr_id;
+			set facet[target_f_id].edge[2] constraint wall_cl_constr_id_1; 
+			unset facet[target_f_id].edge[2] constraint wall_limit_constr_id;
+			set facet[target_f_id].edge[3] constraint wall_cl_constr_id_1; 
+			unset facet[target_f_id].edge[3] constraint wall_limit_constr_id;
+			dissolve facet[target_f_id];
+			local edg_count; 
+			local y_max; 
+			local ver_max_id; 
+			local edg_min_id; 
+			local nei_edg_id; 
+			local ginx; 
+                 	edg_count := count(edge where not fixed and on_constraint wall_cl_constr_id_1, id);
+                 	y_max := max(vertex where not fixed and on_constraint wall_constr_id, y);
+                 	ver_max_id := min(vertex where not fixed and on_constraint wall_constr_id and y==y_max,id);
+                 	edg_min_id := min(vertex[ver_max_id].edge where on_constraint wall_cl_constr_id_1, id); 
+			print edg_min_id;
+                 	if edge[edg_min_id].vertex[1].x > edge[edg_min_id].vertex[2].x then
+			 	{reverse_orientation edge[edg_min_id];
+				 unset edge[edg_min_id] constraint wall_cl_constr_id_1;
+				 set edge[edg_min_id] constraint wall_cl_constr_id_2;
+				};
+                 	for (ginx := 1; ginx < edg_count; ginx += 1)
+                    		{print ginx;
+                     	 foreach edge ee where on_constraint wall_cl_constr_id_1 and ee.id != edg_min_id do
+					{if ee.vertex[1].id == edge[edg_min_id].vertex[2].id then 
+						{nei_edg_id := ee.id};
+                           		 if ee.vertex[2].id == edge[edg_min_id].vertex[2].id then 
+						{reverse_orientation ee; 
+						 unset ee constraint wall_cl_constr_id_1;
+					 	 set ee constraint wall_cl_constr_id_2;
+						 nei_edg_id := ee.id; 
+						 set ee.facet color yellow
+						};
+                          		};
+                     	 edg_min_id := nei_edg_id; 
+				 print edg_min_id;
+                   		};
+			}
+
+
+
+

@@ -1,0 +1,9 @@
+// sefit_operation_files_upload.ses
+// To read the scripts organized in SES files for the operation of the convergence of the surface
+// Programmer: Yongkang Chen, yongkang@cecs.pdx.edu
+// 10/04/2010
+
+read "sefit_parameter_list.ses"
+read "computation_kernel.ses"
+read "eigenvalue_study.ses"
+read "convergence_operation.ses"
