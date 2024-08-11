@@ -140,15 +140,11 @@ class Mesh():
                     if length_squered > 16 / 9 * l_squered:
                         #print(f"Splitting edge {(v1, v2)}")
                         v1.split_edge(v2, self)
-                        if random.random() < 0.01:
-                            self.check_integrity()
                     elif length_squered < 16 / 25 * l_squered:
                         #print(f"Uniting edge {(v1, v2)}")
                         if v2.boundary:
                             continue
                         v1.collapse(v2, self)
-                        if random.random() < 0.01:
-                            self.check_integrity()
                     else:
                         continue
                     break
@@ -162,12 +158,12 @@ class Mesh():
                         print(f"Face {f1} or {f2} doesnt have 3 vertices")
                         continue
                     f1.maybe_edge_flip(f2)
-                    self.check_integrity()
             print("Finished edge flip iterations")
             for vert in self.verts:
                 if not vert.boundary:
                     vert.tangential_smoothing(lambda_)
             print("Finished tangential smoothing iterations")
+            self.check_integrity()
             
 
 class Vertex():
