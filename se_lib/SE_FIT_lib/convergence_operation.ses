@@ -65,6 +65,7 @@ get_error := {if mesh_res_idx == 1 then
 					}
 			 }
 
+MAX_STEPS := 5;
 ps_conv_run_unit := {
 					 local conv_run_ct;
 					 conv_run_ct := 0;
@@ -79,12 +80,14 @@ ps_conv_run_unit := {
 					 if get_equilibrium_idx == 1 then 
 						{get_equilibrium}; */
 					 get_total_e_diff;
+					 iterations_count := 1;
 					 if deep_conv_idx == 1 then
 						{
-						 while (script_core_result == 1 && error >= error_deep_conv_limit) do
+						 while (script_core_result == 1 && error >= error_deep_conv_limit && iterations_count < MAX_STEPS) do
 							{
-							 while (total_e_diff >= epsilon_e && script_core_result == 1) do
-								{number_iteration_old := number_iteration;
+							 while (total_e_diff >= epsilon_e && script_core_result == 1 && iterations_count < MAX_STEPS) do
+								{iterations_count := iterations_count + 1;
+								 number_iteration_old := number_iteration;
 								 save_XYZ_Dim;
 								 convergence_scheme;
 								 get_XYZDimVar;
@@ -108,8 +111,8 @@ ps_conv_run_unit := {
 						}
 					 else
 						{
-						 while (total_e_diff >= epsilon_e && script_core_result == 1) do
-							{
+						 while (total_e_diff >= epsilon_e && script_core_result == 1 && iterations_count < MAX_STEPS) do
+							{iterations_count := iterations_count + 1;
 							 convergence_scheme;
 							 get_total_e_diff;
 							 conv_run_ct += 1;
@@ -119,6 +122,11 @@ ps_conv_run_unit := {
 								}
 							};
 						};
+					 if iterations_count == MAX_STEPS then
+					 {
+					  printf "NOTE: MAX_STEPS exceeded, update by setting 'MAX_STEPS := 100' for example\n";
+					 };
+					 
 					 printf "total_e_diff :";
 					 print total_e_diff;
 					 /* script_core_result := 1; */
