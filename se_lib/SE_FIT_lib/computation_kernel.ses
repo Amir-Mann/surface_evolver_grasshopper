@@ -1,0 +1,504 @@
+// computation_kernel.ses
+// Programmer: Yongkang Chen, yongkang@pdx.edu
+// 04/29/2010
+//
+// Usage: convergence_scheme
+// Note: iteration_step has to be in place for convergence_scheme to work.
+//
+// iteration_step
+// A universal iteration scheme that can work for any geometry
+// 02/26/2010
+//
+// Usage: iteration_step
+//     convergence_scheme
+
+// question: what is standard deviation of edge length for a healthy mesh
+// Do a sample survey of surfaces and find out.
+// Verify the formula is correct with a different way
+// u is always helpful; V is dependent on whether the mesh is healthy, overdoing V wastes computation time
+
+// edge_length_sum := 0
+// foreach edge ee where not fixed do {
+//    edge_length_sum += ee.length;
+//   };
+// edge_length_mean_1 := edge_length_sum/count(edge where not fixed, id)
+//
+// edge_length_sum := 0
+// foreach edge ee where not fixed do {
+//   edge_length_sum += (ee.length-edge_length_mean_1)^2;
+//   };
+// edge_length_std_1 := sqrt(edge_length_sum/count(edge where not fixed, id))
+//
+// edge_length_mean := sum(edge where not fixed, length)/count(edge where not fixed, id)
+// edge_length_std  := sqrt(sum(edge where not fixed, (length-edge_length_mean)^2)/count(edge where not fixed, id))
+//
+// go_vug := {}
+//
+//
+te_osc_checkpoint_ct := 20;
+define tenergy real[6]
+define te_slope real[20]
+define te_slope_pos real[20]
+define te_osc_mean real[te_osc_checkpoint_ct]
+
+mesh_cleanup := {
+                 if min(edge where not fixed and not no_refine, length) < length_threshold/10 then
+                    {if surface_dimension == 2 then u; V; /* printf "Vertex averaging 0\n"; */
+                    };
+                 if min(edge where not fixed and not no_refine, length) < length_threshold/10 then
+                    {/* printf "max edge length\n";
+                     print max(edge where not fixed and not no_refine, length); */
+                     if edge_trim_idx == 1 then
+                        {/* printf "minimum edge length, %f\n", min(edge where not no_refine, length); */
+                         /* printf "trim edge\n"; */
+                         if min_edge_length > 0 then
+                            {t min_edge_length}
+                         else
+                            {t length_threshold/10; 
+                             /* t max(edge where not fixed and not no_refine, length)/10}; */
+                            };
+                         /* printf "minimum edge length, %f\n", min(edge where not no_refine, length); */
+                        }
+                    };
+                 if min(facet where not fixed and not no_refine, area)/max(facet where not fixed and not no_refine, area) < 0.01 then 
+                    {/* printf "facet weeding\n"; */
+                     if edge_trim_idx == 1 then
+                        {if min_edge_length == 0 then
+                            {w max(facet where not fixed and not no_refine, area)*0.01
+                            };
+                        };
+                     V; /* printf "Vertex averaging 1\n"; */
+                     if surface_dimension == 2 then {if equiang_idx == 1 then {u}}
+                     }; 
+                 /* if max(edge where not fixed, length)/min(edge where not fixed, length) > 1.5 then
+                    {if surface_dimension == 2 then u; printf "equiangulation 1\n";
+                    }; */
+                 if number_iteration imod 5 == 0 then
+                    {
+                     if equiang_idx == 1 then
+                        {if surface_dimension == 2 then u}; 
+                    };
+                 if conservativeMeshGroomingIdx == 1 then
+                    {
+                     if count(facet ff where not fixed and 2*ff.area/max(ff.edge, length)^2 < 0.3, id) > 1 then
+                        {if equiang_idx == 1 then
+                            {if surface_dimension == 2 then u};
+                         V; /* printf "Vertex averaging 2\n"; */
+                         /* foreach facet ff where not fixed and 2*ff.area/max(ff.edge, length)^2 < 0.1 do 
+                            {printf "narrow triangles, vertex_average\n";
+                             vertex_average ff.vertex[1]; 
+                             vertex_average ff.vertex[2]; 
+                             vertex_average ff.vertex[3]; 
+                             if surface_dimension == 2 then {u}; 
+                             V ; causes surface to blow sometimes, especially in prbuilt tank
+                            }; causing oscillation when PSF CVS is running at rough mesh */
+                        }
+                    }
+                }
+
+do_mesh_refine_action_idx := 1
+
+//long_edge_count := count(edge where not fixed and length > length_threshold, id); removed from the script below because it limits the operation.
+mesh_refine_action := {
+                         if refine_with_r_inx == 0 then
+                            {
+                             nonfixed_vertex_number_old := count(vertex where not fixed, id);
+                             long_edge_count := 1;
+                             long_edge_refine_count := 0;
+                             while (long_edge_count > 0 && long_edge_refine_count < 5) do
+                                {refine_special;
+                                 if halve_cl_edge_inx == 1 then
+                                    { foreach edge ee where ee.__e_on_cl == 1 and length > length_threshold/2 do {
+                                        if ee.no_refine == 0 then
+                                            {refine ee};
+                                        }
+                                    };
+                                 refine edge where not fixed and not no_refine and length > length_threshold;
+                                 /* long_edge_count := count(edge where not no_refine and length > length_threshold, id); */
+                                 long_edge_refine_count += 1;
+                                };
+                             if nonfixed_vertex_number_old != count(vertex where not fixed, id) then
+                                {vertex_number_changed_idx := 1}
+                             else
+                                {/* vertex_number_changed_idx := 0 */}
+                            };
+                         if refine_with_r_inx == 1 then
+                            {
+                             nonfixed_vertex_number_old := count(vertex where not fixed, id);
+                             while (count(edge where not fixed and length > length_threshold, id)/count(edge where not fixed, id) > 0.5) do
+                                {r
+                                };
+                             refine_special;
+                             if nonfixed_vertex_number_old != count(vertex where not fixed, id) then
+                                {vertex_number_changed_idx := 1}
+                             else
+                                {/* vertex_number_changed_idx := 0 */}
+                            };
+                    }
+                
+iteration_step   := {
+                    time_count := clock;
+                    g 1;
+                    number_iteration += 1; 
+                    te_mean := 0;
+                    te_stdev := 0;
+                    if sefit_graphing_active == 1 then {sefit_graphing};
+                    if sefit_2D_graphing_active == 1 then {sefit_2D_graphing};
+                    symmetry_limit_check;
+                    if script_core_result == 1 then
+                        {special_limit_criteria
+                        };
+                    if script_core_result == 1 then
+                        {if number_iteration < 7 then
+                            {tenergy[number_iteration] := total_energy; 
+                             for (inx := 1; inx < number_iteration+1; inx += 1)
+                                {te_mean += tenergy[inx];
+                                };
+                             te_mean := te_mean/number_iteration;
+                             for (inx := 1; inx < number_iteration+1; inx += 1)
+                                {te_stdev += (tenergy[inx]-te_mean)^2;
+                                };
+                             te_stdev := sqrt(te_stdev/number_iteration);
+                            }
+                         else
+                            {tenergy[1] := tenergy[2];
+                             tenergy[2] := tenergy[3];
+                             tenergy[3] := tenergy[4];
+                             tenergy[4] := tenergy[5];
+                             tenergy[5] := tenergy[6];
+                             tenergy[6] := total_energy; 
+                             for (inx := 1; inx < 7; inx += 1)
+                                {te_mean += tenergy[inx];
+                                };
+                             te_mean := te_mean/6;
+                             for (inx := 1; inx < 7; inx += 1)
+                                {te_stdev += (tenergy[inx]-te_mean)^2;
+                                };
+                             te_stdev := sqrt(te_stdev/6);
+                            };
+                         te_var := abs(te_stdev/te_mean);
+                         printf "%d time elapsed: %f scale: %f energy: %f variation: %e\n", number_iteration, time_iteration, scale, total_energy, te_var;
+                         if do_mesh_refine_action_idx == 1 then
+                            {mesh_refine_action;
+                            };
+                         mesh_cleanup;
+                         if scale < 0.05 then
+                            {small_scale_ct += 1;
+                             if small_scale_ct > 3 then
+                                {if do_rawestv_idx == 1 then
+                                    {if scale < 1e-5 then {rawestv}};
+                                 if surface_dimension == 2 then u;
+                                 /* V; printf "Vertex averaging 3\n"; */
+                                 if length_threshold > length_threshold_max  then
+                                    {length_threshold := 0.98*length_threshold
+                                    };
+                                 small_scale_ct := 0;
+                                }
+                             }
+                         else
+                            {if small_scale_ct > 0 then {small_scale_ct -= 1}};
+                         /* if number_iteration < 15 then
+                            {
+                             V 3; printf "Vertex averaging 4\n";
+                             if surface_dimension == 2 then {u 3} 
+                             }; */
+                         time_iteration += clock - time_count;
+                         if goEnergyLogIdx == 1 then
+                            {energy_logging;
+                            };
+                         if goIterationLogIdx == 0 then
+                            {/* printf "clock: %15.3f energy: %f scale: %f time elapsed: %f\n", clock, total_energy, scale, time_iteration; */
+                            };
+                        }
+                    }
+
+//                      /*if autochop == 1 then  */
+//                      /*  {  */
+//                      /*   nonfixed_vertex_number_old:=count(vertex where not fixed, id); */
+//                      /*   long_edge_count := count(edge where not fixed and length > length_threshold, id); */
+//                      /*   while (long_edge_count > 0) do */
+//                      /*      {refine edge where not fixed and length > length_threshold; */
+//                      /*       long_edge_count := count(edge where not fixed and length > length_threshold, id) */
+//                      /*      }; */
+//                      /*   refine_special; */
+//                      /*   if nonfixed_vertex_number_old != count(vertex where not fixed, id) then */
+//                      /*      {vertex_number_changed_idx := 1} */
+//                      /*   else */
+//                      /*      {vertex_number_changed_idx := 0} */
+//                      /*  };          */  
+//                  
+//                      /* edge_length_mean := sum(edge where not fixed, length)/count(edge where not fixed, id); */
+//                      /* edge_length_std  := sqrt(sum(edge where not fixed, (length-edge_length_mean)^2)/count(edge where not fixed, id)); */
+//                      /* if edge_length_std/edge_length_mean > 0.25 then {V}; */
+//          
+//      
+// script_core is the old name
+
+do_conv_spec_op_idx := 1
+
+convergence_scheme_mc := {quiet off;
+                          printf "<----- START of convergence_scheme ----->\n";
+                          printf "%s\n", date_and_time;
+                          iteration_step; 
+                          mc_max := maximum(abs(max(vertex where not fixed, mean_curvature)),abs(min(vertex where not fixed, mean_curvature)));
+                          mc_avg := abs(avg(vertex where not fixed, mean_curvature));
+                          while ((mc_max - mc_avg)/mc_avg*100 > error && script_core_result == 1 ) do 
+                            {iteration_step; 
+                             if conj_grad_activate_count == 10 then
+                                {
+                                 if conj_grad_idx == 1 then 
+                                    {if conj_grad == 0 then {U}; 
+                                     printf "conjugate grad on\n";
+                                     conj_grad_idx := 0
+                                    }; 
+                                };
+                             if conj_grad_activate_count < 11 then 
+                                {conj_grad_activate_count += 1};
+                            
+                            }
+                        }
+
+
+convergence_scheme := { /* quiet on;  */
+                        printf "<----- START of convergence_scheme ----->\n";
+                        printf "%s\n", date_and_time;
+                        local t_start;
+                        local te_slope_idx; te_slope_idx := 1;
+                        local te_slope_check_idx; te_slope_check_idx := 1;
+                        local te_slope_store_on; te_slope_store_on := 0;
+                        local te_slope_exam_on; te_slope_exam_on := 0;
+                        local te_slope_pos_count; te_slope_pos_count := 0;
+                        local te_slope_pos_idx; te_slope_pos_idx := 1;
+                        local te_osc_count; te_osc_count := 0;
+                        local te_inx;
+                        local te_osc_detected; te_osc_detected := 0;
+                        local te_osc_mean_count; te_osc_mean_count := 1;
+                        local te_osc_sum; te_osc_sum := 0;
+                        local te_osc_mean_idx; te_osc_mean_idx := 1;
+                        local te_osc_mean_collect_initial; te_osc_mean_collect_initial := 0;
+                        local te_osc_mean_collect_regular; te_osc_mean_collect_regular := 0;
+                        local number_iteration_count; 
+                        local number_iteration_old;
+                        local idx;
+                        /* local conj_grad_activate_count; */
+                        /* local te_osc_mean; te_osc_mean := 0; */
+                        t_start := clock; 
+                        number_iteration_count := 5000;
+                        number_iteration_old := number_iteration;
+                        /*conj_grad_activate_count := 0; */
+                        rawestv_count := 0;
+                        iteration_inx := 1;
+                        printf "__levolver_error__: %e\n", error;
+                        for (te_inx := 1; te_inx < 21; te_inx += 1)
+                            {te_slope[te_inx] := 0;
+                             te_slope_pos[te_inx] := 0;
+                            };
+                        te_var := 10*error; /* to get the while loop started */
+                        while (te_var > error && script_core_result == 1 ) do 
+                            {
+                             iteration_step; 
+                             if script_core_result == 0 then 
+                                {printf "script_core_result : %d\n", script_core_result;
+                                 break};
+                             if scale < 0.01 then {U 2};
+                             if do_conv_spec_op_idx == 1 then 
+                                {convergence_special_operation};
+                             if constraint_change_idx == 1 then {U 2};
+                             if rawestv_execess_idx == 1 then
+                                {printf "Too many rawestv\n";
+                                 rawestv_execess_idx := 0;
+                                 break
+                                };
+                             if scoutput_update_inx == 1 then 
+                                {if number_iteration imod scoutput_update_interval == 0 then
+                                    {printf "___BEGIN___UPDATE\n";
+                                     i;
+                                     histogram(edge where not fixed, length);
+                                     printf "___END___UPDATE\n";
+                                    }
+                                };
+                             if saving_png_inx == 1 then
+                                {if number_iteration imod saving_png_interval == 0 then
+                                    {printf "Saving png\n"
+                                    }
+                                };
+                             /*  if number_iteration imod 3 == 0 then
+                                {autodisplay on;
+                                 autodisplay off;
+                                }; */
+                             if number_iteration - dump_start_iteration_number >= 0 then
+                                {if (number_iteration - dump_start_iteration_number) imod do_dump_interval == 0 then 
+                                    {do_dump}
+                                };
+                             if conj_grad_activate_count == 10 then
+                                {
+                                 if conj_grad_idx == 1 then 
+                                    {if conj_grad == 0 then {U}; 
+                                     print "conjugate grad on";
+                                     conj_grad_idx := 0
+                                    }; 
+                                };
+                             if conj_grad_activate_count < 11 then 
+                                {conj_grad_activate_count += 1};
+                             /* printf "conj_grad_activate_count: %d\n", conj_grad_activate_count; */
+                             if script_core_result == 1 then
+                                {/* tenergy[6] := total_energy; 
+                                 te_mean := (tenergy[1]+tenergy[2]+tenergy[3]+tenergy[4]+tenergy[5]+tenergy[6])/6;
+                                 te_stdev := sqrt(((tenergy[1]-te_mean)^2+(tenergy[2]-te_mean)^2+(tenergy[3]-te_mean)^2+(tenergy[4]-te_mean)^2+(tenergy[5]-te_mean)^2+(tenergy[6]-te_mean)^2)/6); 
+                                 te_var := abs(te_stdev/te_mean);
+                                 printf "%d time elapsed: %f scale: %f energy: %f variation: %e\n", number_iteration, time_iteration, scale, total_energy, te_var; */
+                                 if te_oscillation_check == 1 then
+                                    {
+                                     if te_slope_check_idx == 1 then
+                                        {if tenergy[2] > tenergy[1] then
+                                            {printf "<===== Potential oscillation detected =====>\n";
+                                             te_slope_idx := 1;
+                                             te_slope_pos_idx :=1;
+                                             te_slope_check_idx := 0;
+                                             te_slope_store_on := 1;
+                                            }
+                                        };
+                                     if te_slope_store_on == 1 then
+                                        {te_slope[te_slope_idx] := tenergy[2] - tenergy[1];
+                                         te_slope_idx += 1;
+                                         if te_slope_idx == 21 then
+                                            {
+                                             te_slope_store_on := 0;
+                                             te_slope_exam_on := 1;
+                                            }
+                                        };
+                                     if te_slope_exam_on == 1 then
+                                        {for (te_inx := 1; te_inx < 21; te_inx += 1)
+                                            {if te_slope[te_inx] > 0 then
+                                                {te_slope_pos[te_slope_pos_idx] := te_slope[te_inx];
+                                                 te_slope_pos_idx += 1;
+                                                 te_slope_pos_count += 1;
+                                                }
+                                            };
+                                         te_slope_exam_on := 0;
+                                         if te_slope_pos_count > 1 then 
+                                            {
+                                             printf "<===== Oscillation detected in total energy variation =====>\n";       
+                                             printf "%d positive slope within 20 iterations\n", te_slope_pos_count;
+                                             te_osc_detected := 1;
+                                             te_osc_mean_idx := 1;
+                                             te_osc_mean_count := 1;
+                                             te_osc_sum := 0; 
+                                             te_osc_mean_collect_initial := 1;
+                                             U 2;
+                                             conservativeMeshGroomingIdx := 0;
+                                             /* printf "Break\n"; */
+                                             /* break             */                            
+                                            }
+                                         else
+                                            {
+                                             te_slope_check_idx := 1
+                                            };                                                                      
+                                         te_slope_pos_count := 0; 
+                                        };
+                                     if te_osc_detected == 1 then
+                                        {/* saddle; */
+                                         if te_osc_mean_idx == te_osc_checkpoint_ct + 1 then
+                                            {te_osc_mean_collect_regular := 1;
+                                             te_osc_mean_collect_initial := 0;
+                                            };
+                                         if te_osc_mean_collect_initial == 1 then
+                                            {te_osc_sum := te_osc_sum + tenergy[6];
+                                             te_osc_mean[te_osc_mean_idx] := te_osc_sum/te_osc_mean_count;
+                                             te_osc_mean_idx +=1;
+                                             te_osc_mean_count += 1;
+                                            };
+                                         if te_osc_mean_collect_regular == 1 then
+                                            {te_osc_sum := te_osc_sum + tenergy[6];
+                                             for (idx := 1; idx < te_osc_checkpoint_ct; idx++)
+                                                {te_osc_mean[idx] := te_osc_mean[idx+1]
+                                                };
+                                             te_osc_mean[te_osc_checkpoint_ct] := te_osc_sum/te_osc_mean_count;
+                                             te_osc_mean_count += 1;
+                                             te_mean_1 := te_osc_mean[1]/te_osc_checkpoint_ct;
+                                             for (idx := 2; idx < te_osc_checkpoint_ct+1; idx++)
+                                                {te_mean_1 += te_osc_mean[idx]/te_osc_checkpoint_ct
+                                                };
+                                             te_stdev_1 := (te_osc_mean[1]-te_mean_1)^2;
+                                             for (idx := 2; idx < te_osc_checkpoint_ct+1; idx++)
+                                                {te_stdev_1 += (te_osc_mean[idx]-te_mean_1)^2
+                                                };
+                                             te_stdev_1 := sqrt(te_stdev_1);
+                                             te_var_1 := abs(te_stdev_1/te_mean_1);
+                                             printf "te_mean_1: %20.10f te_var_1: %20.10f\n", te_mean_1, te_var_1;
+                                             if te_var_1 < error then 
+                                                {
+                                                 printf "<===== Total energy variation oscillation levels off =====>\n";        
+                                                 printf "Examined within %d iterations\n", te_osc_mean_count-1 ;
+                                                 printf "Break\n"; 
+                                                 break                              
+                                                };                      
+                                            }
+                                        };
+                                    };
+                                 /*dim_print;*/
+                                 if timeout_period_check == 1 then
+                                    {if clock - t_start  > timeout_period then 
+                                        {printf "Time Out: %f\n", timeout_period; 
+                                         break
+                                        };
+                                    };
+                                 if number_iteration_check == 1 then
+                                    {if mesh_res_idx == 1 then
+                                        {if number_iteration - number_iteration_old == 1000 then
+                                            {printf "Limit of number of iteration, 1000, exceeded\n";
+                                             break
+                                            }
+                                        };
+                                     if mesh_res_idx == 2 then
+                                        {if number_iteration - number_iteration_old == 2000 then
+                                            {printf "Limit of number of iteration, 2000, exceeded\n";
+                                             break
+                                            }
+                                        };
+                                     if mesh_res_idx == 3 then
+                                        {if number_iteration - number_iteration_old == 4000 then
+                                            {printf "Limit of number of iteration, 4000, exceeded\n";
+                                             break
+                                            }
+                                        };
+                                    /* if number_iteration - total_number_iteration == number_iteration_count then
+                                        {get_total_e_diff; 
+                                         U 2;
+                                         if total_e_diff >= 10*epsilon_e then
+                                            {total_e_old := total_energy;
+                                             number_iteration_count += 5000;
+                                            }
+                                         else
+                                            {printf "Limit of number of iteration exceeded: %d\n", number_iteration_count; 
+                                             break
+                                            }
+                                        } */
+                                    };
+                                };
+                            };
+                        /* if script_core_result == 1 then
+                            {if eigenvalue_print_idx == 1 then
+                                {eigenvalue_print
+                                };
+                             if hessian_seek_idx == 1 then
+                                {hessian_run; 
+                                };
+                             if eigenvalue_study_idx  == 1 then
+                                {M2_eigenvalue_study; 
+                                };
+                            }; */
+                        if post_converg_op_idx ==1 then 
+                            {post_converg_op; 
+                             /*extra_man*/
+                            };
+                        /* if conj_grad == 1 then {U}; */
+                        /* do_dump;*/
+                        printf "__levolver_error__: %e\n", error; 
+                        /* printf "epsilon_e : %e\n", epsilon_e;
+                        printf "epsilon_em: %e\n", epsilon_em; */
+                        printf "%s\n", date_and_time;   
+                        printf "<----- END of convergence_scheme ----->\n";
+                        quiet off;
+                      }
+

@@ -1,0 +1,13 @@
+v_hit_constr_count := count(vertex where hit_constraint pinning_edge_1, id) + count(vertex where hit_constraint pinning_edge_2, id)
+
+//set vertex where not fixed x x-0.1
+
+//v_hit_constr_count := count(vertex where hit_constraint pinning_edge_1, id) + count(vertex where hit_constraint pinning_edge_2, id)
+
+//print v_hit_constr_count
+
+while (v_hit_constr_count == 0) do
+	{
+	set vertex where not fixed x x-0.1;
+	 v_hit_constr_count := count(vertex where hit_constraint pinning_edge_1, id) + count(vertex where hit_constraint pinning_edge_2, id);
+	};

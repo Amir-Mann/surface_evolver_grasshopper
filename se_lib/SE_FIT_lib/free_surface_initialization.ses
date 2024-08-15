@@ -1,0 +1,378 @@
+//free_surface_initialization.ses
+
+set vertex where fixed vconadj 1
+set vertex where not fixed vconadj 0
+set edge where fixed econadj 1
+set edge where not fixed econadj 0
+
+mesh_optimization_idx := 1	// value will be set to 1 for PSF in SE-FIT
+equiang_idx := 1
+rawestv_count := 0;
+
+mesh_res_idx := 1	/* indicate the level of mesh resolution */
+
+
+conservativeMeshGroomingIdx := 1; /* toggling u and V after each g command. 0, off, 1, on */
+
+
+base_max_edge_length := 0.5
+	initial_max_edge_length  := max(edge where not fixed, length)
+	length_threshold_max     := max(edge where not fixed, length)
+	length_threshold_max_old := length_threshold_max
+
+// obsolete halve_long_edge_inx := 1;   			/* toggle edge refinement on the run. 0: no, 1: yes */
+CVS_rough_mesh_edge_length := 0.4; 		/* initial_max_edge_length/2; */
+CVS_medium_mesh_edge_length := 0.2; 	/* initial_max_edge_length/4; */
+CVS_fine_mesh_edge_length := 0.1; 		/* initial_max_edge_length/8; */
+CVS_very_fine_mesh_edge_length := 0.05; /* initial_max_edge_length/16;*/
+
+// min_edge_length is created for cases where there are no_refine small edges which 
+// should be better treated as a reference edge for the mesh resolution.
+// still experimental.
+if is_defined("char_length") == 0 then {char_length := 0} 
+
+if is_defined("vol_total") == 0 then {vol_total := 0} 
+
+min_edge_length := 0
+
+
+mesh_setting := {
+				 free_surface_area := sum(facet where not fixed, area);
+				 edge_length_factor := sqrt(symmetry_idx*free_surface_area/((36*pi)^(1/3)));
+				 /* if body_count >= 1 then
+					{if body[1].target != 0 then {edge_length_factor := (body[1].target)^(1/3)}
+					}
+				 */
+				}
+
+
+
+
+set_refine_mode := {if min(edge where not fixed, length) > 0  then
+						{if max(edge where not fixed, length)/min(edge where not fixed, length) < 20 then
+							{refine_mode_idx := 1;
+							}
+						 else
+							{if count(edge where not fixed and no_refine, id) > 0 then
+								{if min(edge where not fixed and no_refine, length) == min(edge where not fixed, length) then
+									{min_edge_length := min(edge where not fixed and no_refine, length)
+									}
+								};
+							 refine_mode_idx := 2;
+							}
+						}
+					}
+	
+//					
+
+
+//
+find_lt := 	{length_threshold := max(edge where not fixed and not no_refine, length); 
+			 autochop := max(edge where not fixed, length); 
+			 printf "length_threshold := %f\n", length_threshold
+			}
+	
+// use lt_update for a more compact script
+lt_update := {length_threshold_max := length_threshold; 
+			  length_threshold_max_old := length_threshold_max
+			 }
+			 
+//my_re      := {refine edge where not fixed and length >length_threshold}
+//my_re_idx  := 1
+
+vertex_number_setting := {	initial_vertex_count := count(vertex where not fixed, id);
+							vertex_number     := count(vertex where not fixed,id);
+							vertex_number_changed_idx := 0;
+							vertex_number_old := vertex_number
+							}
+
+//mesh_smooth: use length_ratio > 4 for drop on leaf cases
+do_mesh_smooth := 0
+mesh_smooth := {local vu_ct;
+				local edge_ct;
+				length_ratio := max(edge where not fixed, length)/min(edge where not fixed, length);
+				vu_ct := 1;
+				while (length_ratio > 4 && script_core_result == 1) do 
+					{edge_ct := edge_count;
+					 if edge_trim_idx == 1 then
+						{
+						t max(edge where not fixed, length)/4;
+						};
+					 if edge_count < edge_ct then
+						{V; printf "Vertex averaging 6\n";
+						 if equiang_idx == 1 then
+							{if space_dimension == 3 then u}; 
+
+						};
+					 length_ratio := max(edge where not fixed, length)/min(edge where not fixed, length);
+					 vu_ct += 1;
+					 if vu_ct > 25 then {break}
+					}
+				}
+				
+mesh_grooming := {
+			      while (max(edge where not fixed, length) >= 2*length_threshold) do
+					{if refine_with_r_inx == 0 then
+						{
+						 refine edge where not fixed and length > length_threshold;
+						 V 3; printf "Vertex averaging 7\n";
+						 if space_dimension == 3 then {u};
+
+						};
+					 if refine_with_r_inx == 1 then
+						{
+						 r; 
+						 V 3; printf "Vertex averaging 8\n";
+						 if space_dimension == 3 then {u};
+
+						};
+					}
+			     }
+				 
+refine_special := {}      // for the refinement of edges on constraints, old name: cl_re.
+
+//refine_special := {long_edge_count_1 := count(edge where on_constraint vertical and length > 0.5*length_threshold, id);
+//					long_edge_reine_ount_1 := 0;
+//                  while (long_edge_count_1 > 0 && long_edge_reine_ount_1 < 2) do
+//		     		{ pp:=pp/2; qq := qq % pp; 
+//					  refine edge where on_constraint vertical;
+//					  long_edge_reine_ount_1 += 1;
+//					  long_edge_count_1 := count(edge where on_constraint vertical and length > 0.5*length_threshold, id)
+//					};
+//                }
+
+//refine_special := {long_edge_count_1 := count(edge where on_constraint vertical and length > 0.5*length_threshold, id);
+//					long_edge_reine_ount_1 := 0;
+//                  while (long_edge_count_1 > 0 && long_edge_reine_ount_1 < 2) do
+//		     		{ pp:=pp/2; qq := qq % pp; 
+//					  printf "pp = %11.6f", pp;
+//					  refine edge where on_constraint vertical;
+//					  long_edge_reine_ount_1 += 1;
+//					  long_edge_count_1 := count(edge where on_constraint vertical and length > 0.5*length_threshold, id)
+//					};
+//               }
+
+get_XYZ_limits := {XMax := max(vertex where not fixed, x);
+				   YMax := max(vertex where not fixed, y);
+				   ZMax := max(vertex where not fixed, z);
+				   XMin := min(vertex where not fixed, x);
+				   YMin := min(vertex where not fixed, y);
+				   ZMin := min(vertex where not fixed, z);
+				   }
+
+get_dimension_limit := 	{
+						 if max(vertex,x) != 0 then {x_max:= 5*max(vertex,x)} else {x_max :=  5};
+						 if max(vertex,y) != 0 then {y_max:= 5*max(vertex,y)} else {y_max :=  5};
+						 if min(vertex,x) != 0 then {x_min:= 5*min(vertex,x)} else {x_min := -5};
+						 if min(vertex,y) != 0 then {y_min:= 5*min(vertex,y)} else {y_min := -5};
+						 x_max_ori := x_max; x_min_ori := x_min; 
+						 y_max_ori := y_max; y_min_ori := y_min;
+						 if space_dimension == 3 then
+							{if max(vertex,z) != 0 then {z_max:= 5*max(vertex,z)} else {z_max :=  5};
+							 if min(vertex,z) != 0 then {z_min:= 5*min(vertex,z)} else {z_min := -5};
+							 z_max_ori := z_max; z_min_ori := z_min;
+							};
+						}
+
+get_XYZ_MaxMin :=  {
+					X_Dim := max(vertex where not fixed, x) - min(vertex where not fixed, x);
+					if X_Dim == 0 then {X_Dim := 1e-6};
+					Y_Dim := max(vertex where not fixed, y) - min(vertex where not fixed, y);
+					if Y_Dim == 0 then {Y_Dim := 1e-6};
+					if space_dimension == 3 then
+						{Z_Dim := max(vertex where not fixed, z) - min(vertex where not fixed, z);
+						 if Z_Dim == 0 then {Z_Dim := 1e-6};
+						}
+					}
+
+get_initial_aspect_ratio := {get_XYZ_MaxMin;
+							 initial_aspect_ratio := maximum(maximum(X_Dim, Y_Dim),Z_Dim)/minimum(minimum(X_Dim, Y_Dim),Z_Dim)
+							 }
+
+save_XYZ_Dim := {X_Dim_old := X_Dim;
+				 Y_Dim_old := Y_Dim;
+				 Z_Dim_old := Z_Dim
+				}
+				
+get_XYZDimVar := {get_XYZ_MaxMin;
+				  X_DimVar := abs(X_Dim-X_Dim_old)/X_Dim_old;
+			      Y_DimVar := abs(Y_Dim-Y_Dim_old)/Y_Dim_old;		
+				  XYZ_DimVarMax := maximum(X_DimVar, Y_DimVar);
+			      Z_DimVar := abs(Z_Dim-Z_Dim_old)/Z_Dim_old;	
+				  XYZ_DimVarMax := maximum(XYZ_DimVarMax, Z_DimVar);
+				  printf "maximum x/y/z variation: %f\n", XYZ_DimVarMax
+				 }
+
+get_x_min_current := {x_min_current := min(vertex where not fixed, x)}
+get_x_min_old := {x_min_old := min(vertex where not fixed, x)}
+get_z_max_old := {if space_dimension == 3 then {z_max_old := max(vertex where not fixed, z)}}
+get_z_min_old := {if space_dimension == 3 then {z_min_old := min(vertex where not fixed, z)}}
+
+symmetry_check_indices := {
+							x_sym_idx := 0;
+							y_sym_idx := 0;
+							x_max_idx := 0;
+							x_min_idx := 0;
+							y_max_idx := 0;
+							y_min_idx := 0;
+							if space_dimension == 3 then
+								{z_sym_idx := 0;
+								 z_max_idx := 0;
+								 z_min_idx := 0;
+								}
+						  }
+symmetry_check_indices
+
+x_min_adjust := {if x_min_idx == 1 then
+					{x_min := x_min_ori; 
+					 if min(vertex where not fixed, x) < 0 then
+						{if 1.2*min(vertex where not fixed, x) > x_min_ori then
+							{x_min := 1.2*min(vertex where not fixed, x)
+							}
+						};
+					 printf "x_min_ori : %12.7f\n", x_min_ori;
+					 printf "x_min : %12.7f\n", x_min;
+					}
+				}
+				 
+z_max_adjust := {if space_dimension == 3 then 
+					{
+					 if z_max_idx == 1 then
+						{z_max := z_max_ori; 
+						 if max(vertex where not fixed, z) > 0.1 then
+							{if 1.2*max(vertex where not fixed, z) < z_max_ori then
+								{z_max := 1.2*max(vertex where not fixed, z)
+								}
+							};
+						 printf "z_max_ori : %12.7f\n", z_max_ori;
+						 printf "z_max : %12.7f\n", z_max;
+						}
+					}
+				}
+				
+z_min_adjust := {if space_dimension == 3 then 
+					{if z_min_idx == 1 then
+						{z_min := z_min_ori; 
+						 if min(vertex where not fixed, z) < -0.1 then
+							{if 1.2*min(vertex where not fixed, z) > z_min_ori then
+								{z_min := 1.2*min(vertex where not fixed, z)
+								}
+							};
+						 printf "z_min_ori : %12.7f\n", z_min_ori;
+						 printf "z_min : %12.7f\n", z_min;
+						}
+					}
+				}
+
+x_max_check := {if script_core_result == 1 then
+					{if max(vertex where not fixed, x) > x_max then 
+						{printf "x_max exceeded\n"; 
+						 limit_break_msg := sprintf "x_max = %f exceeded", x_max;
+						 script_core_result := 0; 
+						}
+					}
+				}
+
+x_min_check := {if script_core_result == 1 then
+					{ get_x_min_current;
+					 if x_min_current < x_min then 
+						{printf "x_min exceeded\n"; 
+						 limit_break_msg := sprintf "x_min = %f exceeded", x_min;
+						 script_core_result := 0; 
+						}
+					}
+				}
+
+y_max_check := {if script_core_result == 1 then
+					{if max(vertex where not fixed, y) > y_max then 
+						{printf "y_max exceeded\n"; 
+						 limit_break_msg := sprintf "y_max = %f exceeded", y_max;
+						 script_core_result := 0; 
+						}
+					}
+				}
+
+y_min_check := {if script_core_result == 1 then
+					{if min(vertex where not fixed, y) < y_min then 
+						{printf "y_min exceeded\n"; 
+						 limit_break_msg := sprintf "y_min = %f exceeded", y_min;
+						 script_core_result := 0; 
+						}
+					}
+				}
+
+z_max_check := {if space_dimension == 3 then 
+					{
+					if script_core_result == 1 then
+						{if max(vertex where not fixed, z) > z_max then 
+							{printf "z_max exceeded\n"; 
+							 limit_break_msg := sprintf "z_max = %f exceeded", z_max;
+							 script_core_result := 0; 
+							}
+						}
+					}
+				}
+
+z_min_check := {if space_dimension == 3 then 
+					{
+					if script_core_result == 1 then
+						{if min(vertex where not fixed, z) < z_min then 
+							{printf "z_min exceeded\n"; 
+							 limit_break_msg := sprintf "z_min = %f exceeded", z_min;
+							 script_core_result := 0; 
+							}
+						}
+					}
+				}
+
+x_sym_check := {if script_core_result == 1 then
+					{if abs(max(vertex where not fixed, x) + min(vertex where not fixed, x)) > 0.2*max(vertex where not fixed, abs(x)) then
+						{printf "x symmetry broken\n"; 
+						 limit_break_msg := "x symmetry broken";
+						 script_core_result := 0; 
+						}
+					}
+				}
+				
+y_sym_check := {if script_core_result == 1 then
+					{if abs(max(vertex where not fixed, y) + min(vertex where not fixed, y)) > 0.2*max(vertex where not fixed, abs(y)) then
+						{printf "y symmetry broken\n"; 
+						 limit_break_msg := "y symmetry broken";
+						 script_core_result := 0; 
+						}
+					}
+				}
+
+z_sym_check := {if space_dimension == 3 then 
+					{
+					if script_core_result == 1 then
+						{if abs(max(vertex where not fixed, z) + min(vertex where not fixed, z)) > 0.2*max(vertex where not fixed, abs(z)) then
+							{printf "z symmetry broken\n"; 
+							 limit_break_msg := "z symmetry broken";
+							 script_core_result := 0;
+							}
+						}
+					}
+				}
+
+limit_break_msg := sprintf ""
+
+US_max_check_1_content := {}
+US_max_check_1 := {}
+US_max_check_2_content := {}
+US_max_check_2 := {}
+symmetry_limit_check := {}
+dimension_limit_adjust := {}
+special_limit_criteria := {}
+
+free_surface_initialize := {mesh_setting; 
+							set_refine_mode;
+							find_lt;
+							vertex_number_setting;
+							get_dimension_limit;
+							get_XYZ_MaxMin;
+							get_initial_aspect_ratio;
+							save_XYZ_Dim;
+							}				
+
+free_surface_initialize

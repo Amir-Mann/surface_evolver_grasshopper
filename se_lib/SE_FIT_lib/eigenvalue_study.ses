@@ -1,0 +1,333 @@
+// eigenvalue_study.ses
+// Programmer: Yongkang Chen, yongkang@cecs.pdx.edu
+// 10/06/2010
+//
+// Usage: eigenvalue_saddle_op
+//        eigenvalue_print 
+//        hessian_run
+//        M1_eigenvalue_study
+//        M2_eigenvalue_study
+//
+// Mar.  14, 2008 Added hessian_M_idx for choosing M 1 or M 2 before Hessian
+// 2/14/2014 replaced convergence_scheme with {g 3; V; u}5 in eigenvalue_saddle_op
+//
+
+eigenvalue_saddle_op := {
+			 	local energy_before_saddle;
+				local t_saddle_start;
+				t_saddle_start := clock; 
+			 	printf "<----- START of eigenvalue_saddle_op ----->\n";
+			 	eigenprobe 0; 
+			 	break_after_warning; 
+			 	/* printf "flag eigenvalue_saddle_op"; */
+			 	while (eigen_neg>0 && eigen_neg<10) do 
+					{energy_before_saddle:= total_energy; 
+					 saddle;  
+					 symmetry_limit_check;
+					 if script_core_result == 1 then
+						{
+						special_limit_criteria;
+						};
+					 /*if script_core_result ==1 then
+						{if vert_fix_idx == 1 then 
+							{vert_unfix};
+						 {g 3; V; u}5;
+						 if vert_fix_idx == 1 then 
+							{vert_fix}; 
+						}; */
+					 if script_core_result == 0 then 
+						{break};
+					 if energy_before_saddle == total_energy then 
+						{break};
+					 if clock - t_saddle_start  > 1800 then 
+						{printf "eigenvalue_saddle_op Time Out\n"; 
+						 break
+						};  
+					 eigenprobe 0;
+					};
+				 break_after_warning off;
+				 if eigen_neg >= 10 then
+					{printf "<===== Number of negative eigenvalue >= 10 =====>\n";
+					};
+				 printf "<----- END of eigenvalue_saddle_op ----->\n";
+				}  
+//
+
+eigenvalue_print := {	
+				printf "<----- START of eigenvalue_print ----->\n";
+                break_after_warning; 
+				eigenprobe 0; 
+				break_after_warning off;
+				linear_metric;
+				if eigen_neg == 0 then 
+					{ritz(0,2); 
+					 printf "No negative eigenvalue, lowest eigenvalue: %17.15f\n", eigenvalues[1];
+					 if bond_eigenvalue_print_idx == 1 then
+					 	{bond_eigenvalue_print; 
+						 /* exec sprintf "bond_eigenvalue_print >> %s.eig", output_file_name */};
+					}
+				else 
+					{ritz(-0.1,2); 
+					 printf "Negative eigenvalues, lowest eigenvalue: %17.15f\n", eigenvalues[1];
+					 if bond_eigenvalue_print_idx == 1 then
+					 	{bond_eigenvalue_print;
+						 /* exec sprintf "bond_eigenvalue_print >> %s.eig", output_file_name */};
+					};
+				printf "<----- END of eigenvalue_print ----->\n";
+                		break_after_warning; 
+				eigenprobe 0;
+                		break_after_warning off; 
+                	}
+//                 
+
+hessian_run := {	
+				printf "<----- START of hessian_run ----->\n";
+				local energy_before_hessian;
+				eigenprobe 0; 
+				if eigen_neg == 0 then
+					{
+					 hessian_seek;
+					 while (last_hessian_scale > 0.01)	do 
+						{break_after_warning; 
+						 energy_before_hessian := total_energy; 
+						 eigenprobe 0; 
+						 if eigen_neg == 0 then 
+							{hessian_seek}; 
+						 break_after_warning off; 
+						 if energy_before_hessian == total_energy then break
+						};
+					};
+				break_after_warning; 
+				eigenprobe 0; 
+				break_after_warning off;
+				if hessian_idx == 1 then 
+					{check_increase on;
+				 	 while (eigen_neg ==0) do 
+						{energy_before_hessian := total_energy; 
+						 hessian; 
+						 if (energy_before_hessian == total_energy) then 
+							{break}; 
+						 break_after_warning; 
+						 eigenprobe 0; 
+						 break_after_warning off
+						};
+					 check_increase off
+					};
+				break_after_warning; 
+				eigenprobe 0; 
+				break_after_warning off;
+				eigenvalue_print;
+				printf "<----- END of hessian_run ----->\n";
+               	 }  
+//
+
+M1_eigenvalue_study := {
+						local hessian_repeat_idx;
+						/* printf "START of M1_eigenvalue_study\n"; */ 
+						/* convergence_scheme; */
+						if script_core_result ==1 then
+							{printf "<----- Start of M1_eigenvalue_study ----->\n";
+							 if vert_fix_idx == 1 then 
+								{vert_fix}; 
+							 eigenvalue_print; 
+							 if eigen_neg >0 then
+								{
+								 eigenvalue_saddle_op;
+								};
+							 if vert_fix_idx == 1 then 
+								{vert_unfix};
+							 if script_core_result ==1 then
+								{                       
+								 if vert_fix_idx == 1 then 
+									{vert_fix}; 
+								 hessian_repeat_idx := 0;
+								 while hessian_repeat_idx < 2 do 
+									{
+									 hessian_run; 
+									 eigenvalue_print; 
+									 if eigen_neg >0 and script_core_result ==1 then 
+										{
+										 eigenvalue_saddle_op; 
+										};
+									 hessian_repeat_idx += 1;
+									};
+								 if vert_fix_idx == 1 then 
+									{vert_unfix};
+								};
+							 printf "<----- END of M1_eigenvalue_study ----->\n";
+							};
+						break_after_warning off
+                        }
+//
+            
+M2_eigenvalue_study := {
+						if hessian_M_idx == 1 then 
+							{M1_eigenvalue_study}; 
+						if hessian_M_idx == 2 then 
+							{M 2; 
+							 M1_eigenvalue_study;
+							 M 1
+							};
+						do_dump
+                        }
+
+						
+get_equilibrium := {printf "<----- Start of Hessian ----->\n";
+					local e_old;
+					local ritz_shift;
+					local n_exp;
+					local ct;
+					local neg_eigen_ct;
+					local tot_area_old;
+					local hessian_clock_initial;
+					local hessian_time_count;
+					hessian_clock_initial := clock;
+					n_exp := 0;
+					ritz_shift := 0;
+					neg_eigen_ct := 0;
+					/* M 2; */
+                    linear_metric;
+                    outer_loop_idx := 1;
+                    inner_loop_idx := 1;
+					if script_core_result == 1 then
+						{eigenprobe 0;
+						 /* if eigen_neg > 0 then
+							{while eigen_neg > 0 do
+								{n_exp += 1;
+								 ritz_shift := -10^n_exp;
+								 ritz(ritz_shift,5);
+								 if n_exp > 5 then {n_exp := 0; break}
+								}
+							}
+						 else
+							{ritz(0,5)
+							}; 
+						 bond_eigenvalue_print; */
+						 last_eigenvalue_old := last_eigenvalue;
+						 while (outer_loop_idx == 1 && script_core_result == 1) do
+							{
+							 while (inner_loop_idx == 1 && script_core_result == 1) do
+								{check_increase on;
+								 vert_fix;
+								 ct := 1;
+								 while (ct < 6 && script_core_result == 1) do 
+									{printf "inner loop, ct: %d\n", ct;
+									 if eigen_neg > 0 then 
+										{saddle; 
+										 symmetry_limit_check;
+										 if script_core_result == 0 then
+											{break};
+										 if script_core_result == 1 then
+											{special_limit_criteria
+											};
+										 if script_core_result == 0 then
+											{break};
+										 if script_core_result == 1 then
+											{eigenprobe 0
+											}
+										}
+									 else 
+										{e_old := total_energy;
+										 print "Hessian";
+										 tot_area_old := total_area;
+										 Hessian;
+										 if total_area/tot_area_old > 5 then
+											{print "surface looks like blown up after Hessian";
+											 script_core_result := 0};
+										 if script_core_result == 0 then
+											{break};
+										 if script_core_result == 1 then
+											{
+											 if e_old == total_energy then
+												{print "Hessian_seek";
+												 tot_area_old := total_area;
+												 hessian_seek;
+												 if total_area/tot_area_old > 5 then
+													{print "surface looks like blown up after Hessian_seek";
+													 script_core_result := 0};
+												 if script_core_result == 0 then
+													{break};
+												 if script_core_result == 1 then
+													{
+													 if e_old == total_energy then
+														 {inner_loop_idx := 0;
+														  break;   
+														 };
+													};
+												};   
+											};
+										 symmetry_limit_check;
+										 if script_core_result == 0 then
+											{break};
+										 if script_core_result == 1 then
+											{special_limit_criteria
+											};
+										 if script_core_result == 0 then
+											{break};
+										 if script_core_result == 1 then
+											{eigenprobe 0
+											}
+										};
+									 ct +=1
+									};
+								 print "-->Ritz";            
+								 eigenprobe 0;
+								 /* if eigen_neg > 0 then
+									{while eigen_neg > 0 do
+										{n_exp += 1;
+										 ritz_shift := -10^n_exp;
+										 ritz(ritz_shift,5);
+										 if n_exp > 5 then {n_exp := 0; break}
+										}
+									}
+								 else
+									{ritz(0,5)
+									}; 
+								 bond_eigenvalue_print; */
+								 printf "-->last_eigenvalue := %g\n", last_eigenvalue;                                   
+								 if last_eigenvalue < 0 then
+									{neg_eigen_ct += 1;
+									 if neg_eigen_ct > 20 then
+										{break}
+									};
+								 vert_unfix;
+								 check_increase off;
+								 if (inner_loop_idx == 1 && script_core_result == 1) then
+									{{iteration_step; mesh_smooth; convergence_special_operation}5;
+									}
+								 else
+									{break}
+								};
+							 printf "last_eigenvalue_old := %g\n", last_eigenvalue_old;
+							 printf "last_eigenvalue := %g\n", last_eigenvalue;      
+							 if neg_eigen_ct > 20 then
+								{print "Frequent occurrence of negative eigenvalue";
+								 script_core_result := 0;
+								 break
+								};
+							 if last_eigenvalue == 0 then
+								{
+								 if abs(last_eigenvalue_old) < 1e-7 then
+									{outer_loop_idx := 0; break
+									}
+								 else
+									{last_eigenvalue_old := last_eigenvalue;
+									 inner_loop_idx := 1}                                
+								}
+							 else
+								{
+								 if abs(last_eigenvalue_old - last_eigenvalue) < 1e-7 then
+									{outer_loop_idx := 0; break
+									}
+								 else
+									{last_eigenvalue_old := last_eigenvalue;
+									 inner_loop_idx := 1}
+								}
+							};
+						};
+					/* M 1; */
+                    vert_unfix;
+					hessian_time_count := clock - hessian_clock_initial;
+					printf "Hessian time elapsed: %f energy: %f\n", hessian_time_count, total_energy;
+					printf "<----- End of Hessian ----->\n"
+                   }

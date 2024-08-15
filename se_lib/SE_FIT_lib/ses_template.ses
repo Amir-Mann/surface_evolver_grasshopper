@@ -1,0 +1,38 @@
+// get_facet_normal_vector.ses
+// -- to 
+
+// Programmer: Yongkang Chen, yongkang@cecs.pdx.edu
+
+// Usage: interf_merge (inx_1, inx_2, id_1, id_2, id_3, id_4, id_5)
+// 		  inx_1: id number of the vertex 1
+// 		  inx_2: id number of the vertex 2
+//         id_1: id number of the constraint for vertex inx_1. 
+//         id_2: id number of the constraint for vertex inx_1.
+//         id_3: id number of the constraint for vertex inx_2. 
+//         id_4: id number of the constraint for vertex inx_2.
+//         id_5: id number of the body that the new generated facets should be on
+// The formulas are from Differential and Integral Calculus, Courant, Vol II, pp8-9
+
+procedure get_facet_normal_vector (integer picked_facet_id)
+	{ 
+	 local f_id;
+	 f_id := picked_facet_id;
+	 cfx_1 := facet[f_id].vertex[1].x;
+	 cfy_1 := facet[f_id].vertex[1].y;
+	 cfz_1 := facet[f_id].vertex[1].z;
+	 cfx_2 := facet[f_id].vertex[2].x;
+	 cfy_2 := facet[f_id].vertex[2].y;
+	 cfz_2 := facet[f_id].vertex[2].z;
+	 cfx_3 := facet[f_id].vertex[3].x;
+	 cfy_3 := facet[f_id].vertex[3].y;
+	 cfz_3 := facet[f_id].vertex[3].z;
+       cf_coef_x := cfy_1*cfz_3 + cfy_2*cfz_1 + cfy_3*cfz_2 - cfy_1*cfz_2 - cfy_2*cfz_3 - cfy_3*cfz_1;
+       cf_coef_y := cfx_1*cfz_2 + cfx_2*cfz_3 + cfx_3*cfz_1 - cfx_1*cfz_3 - cfx_2*cfz_1 - cfx_3*cfz_2;
+       cf_coef_z := cfx_1*cfy_3 + cfx_2*cfy_1 + cfx_3*cfy_2 - cfx_1*cfy_2 - cfx_2*cfy_3 - cfx_3*cfy_1;
+       cf_constant := cfx_1*cfy_2*cfz_3 + cfx_2*cfy_3*cfz_1 + cfx_3*cfy_1*cfz_2 - cfx_1*cfy_3*cfz_2 - cfx_2*cfy_1*cfz_3 - cfx_3*cfy_2*cfz_1;
+	 dir_cos_alpha := coef_x/sqrt(coef_x^2 + coef_y^2 + coef_z^2);
+	 dir_cos_beta := coef_y/sqrt(coef_x^2 + coef_y^2 + coef_z^2);
+	 dir_cos_gamma := coef_z/sqrt(coef_x^2 + coef_y^2 + coef_z^2);
+	 dist_quant_p := -cf_constant/sqrt(coef_x^2 + coef_y^2 + coef_z^2);
+	 return;
+	}

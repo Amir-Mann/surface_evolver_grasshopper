@@ -1,0 +1,119 @@
+// mass_center_plot
+// draw the center of mass of bodies. For now, one vapor and one liquid body
+// Useful for closed container when there is one vapor and one liquid body.
+// Yongkang Chen
+// December 09 2009
+// Portland State University 
+// masss center symbol in x-z plane
+
+mass_center_x := xmc.value/body[1].volume
+mass_center_y := ymc.value/body[1].volume
+mass_center_z := zmc.value/body[1].volume
+if is_defined("vol_total") then 
+	{mass_center_x := -body[1].volume/(vol_total-body[1].volume)*mass_center_x;
+	 mass_center_y := -body[1].volume/(vol_total-body[1].volume)*mass_center_y; /*+ max(vertex, y); */
+	 mass_center_z := -body[1].volume/(vol_total-body[1].volume)*mass_center_z;
+	}
+	
+mc_alpha := atan(mass_center_y/mass_center_x)
+
+mass_center_delta := maximum(max(vertex,x),maximum(max(vertex,y),max(vertex,z)))/30
+//mass_center_delta := 0.0525
+{define constraint mass_center_circle formula sqrt((x - mass_center_x)^2 + (y - mass_center_y)^2 +(z - mass_center_z)^2) = mass_center_delta;}
+{define constraint mass_center_xy_rotate formula y - x*tan(mc_alpha);}
+
+define mass_center_v_id integer[5]
+define mass_center_e_id integer[8]
+define mass_center_f_id integer[4]
+mass_center_draw := {
+			mass_center_v_id[1] := new_vertex(mass_center_x, mass_center_y, mass_center_z);
+			mass_center_v_id[2] := new_vertex(mass_center_x, mass_center_y, mass_center_z + mass_center_delta);
+			mass_center_v_id[3] := new_vertex(mass_center_x + mass_center_delta*cos(mc_alpha), mass_center_y + mass_center_delta*sin(mc_alpha), mass_center_z);
+			mass_center_v_id[4] := new_vertex(mass_center_x, mass_center_y, mass_center_z - mass_center_delta);
+			mass_center_v_id[5] := new_vertex(mass_center_x - mass_center_delta*cos(mc_alpha), mass_center_y - mass_center_delta*sin(mc_alpha), mass_center_z);
+			for (id_ind := 1; id_ind < 6; id_ind+=1) 	{set vertex[mass_center_v_id[id_ind]] fixed};
+			for (id_ind := 2; id_ind < 6; id_ind+=1) 	{set vertex[mass_center_v_id[id_ind]] constraint mass_center_circle};
+			for (id_ind := 2; id_ind < 6; id_ind+=1) 	{set vertex[mass_center_v_id[id_ind]] constraint mass_center_xy_rotate};
+			mass_center_e_id[1] := new_edge(mass_center_v_id[1],mass_center_v_id[2]);
+			mass_center_e_id[2] := new_edge(mass_center_v_id[1],mass_center_v_id[3]);
+			mass_center_e_id[3] := new_edge(mass_center_v_id[1],mass_center_v_id[4]);
+			mass_center_e_id[4] := new_edge(mass_center_v_id[1],mass_center_v_id[5]);
+			mass_center_e_id[5] := new_edge(mass_center_v_id[2],mass_center_v_id[3]);
+			mass_center_e_id[6] := new_edge(mass_center_v_id[3],mass_center_v_id[4]);
+			mass_center_e_id[7] := new_edge(mass_center_v_id[4],mass_center_v_id[5]);
+			mass_center_e_id[8] := new_edge(mass_center_v_id[5],mass_center_v_id[2]);
+			for (id_ind := 1; id_ind < 9; id_ind+=1) {
+				 set edge[mass_center_e_id[id_ind]] color -1; 
+				 set edge[mass_center_e_id[id_ind]] bare;
+				 /* set edge[mass_center_e_id[id_ind]] noncontent; */
+			     set edge[mass_center_e_id[id_ind]] fixed;
+			     if id_ind > 4 then {set edge[mass_center_e_id[id_ind]] constraint mass_center_circle}; 
+			     set edge[mass_center_e_id[id_ind]] constraint mass_center_xy_rotate; 
+				};
+			mass_center_f_id[1] := new_facet(mass_center_e_id[1],mass_center_e_id[5],-mass_center_e_id[2]);
+			mass_center_f_id[2] := new_facet(mass_center_e_id[2],mass_center_e_id[6],-mass_center_e_id[3]);
+			mass_center_f_id[3] := new_facet(mass_center_e_id[3],mass_center_e_id[7],-mass_center_e_id[4]);
+			mass_center_f_id[4] := new_facet(mass_center_e_id[4],mass_center_e_id[8],-mass_center_e_id[1]);
+			for (id_ind := 1; id_ind < 5; id_ind+=1)  {
+				 set facet[mass_center_f_id[id_ind]] tension 0; 
+				 set facet[mass_center_f_id[id_ind]] no_refine;
+				 set facet[mass_center_f_id[id_ind]] fixed;
+				 /* set facet[mass_center_f_id[id_ind]] noncontent; */
+				};
+				 set facet[mass_center_f_id[1]] color white;
+				 set facet[mass_center_f_id[2]] color black;
+				 set facet[mass_center_f_id[3]] color white;
+				 set facet[mass_center_f_id[4]] color black;
+                     {refine edge where on_constraint mass_center_circle}5;
+					  foreach edge ee where valence > 1 and ee.facet[1].color == white do {set ee color -1};
+					  foreach edge ee where valence > 1 and ee.facet[1].color == black do {set ee color -1};
+                      set edge where on_constraint mass_center_circle no_refine
+                    }
+
+/* mass_center_draw := {
+			mass_center_v_id[1] := new_vertex(mass_center_x + mass_center_delta, mass_center_y, mass_center_z);
+			mass_center_v_id[2] := new_vertex(mass_center_x, mass_center_y + mass_center_delta, mass_center_z);
+			mass_center_v_id[3] := new_vertex(mass_center_x - mass_center_delta, mass_center_y, mass_center_z);
+			mass_center_v_id[4] := new_vertex(mass_center_x, mass_center_y - mass_center_delta, mass_center_z);
+			mass_center_v_id[5] := new_vertex(mass_center_x, mass_center_y, mass_center_z + mass_center_delta);
+			mass_center_v_id[6] := new_vertex(mass_center_x, mass_center_y, mass_center_z - mass_center_delta);
+			for (id_ind := 1; id_ind < 7; id_ind+=1) 	{set vertex[mass_center_v_id[id_ind]] fixed};
+			mass_center_e_id[1] := new_edge(mass_center_v_id[1],mass_center_v_id[2]);
+			mass_center_e_id[2] := new_edge(mass_center_v_id[2],mass_center_v_id[3]);
+			mass_center_e_id[3] := new_edge(mass_center_v_id[3],mass_center_v_id[4]);
+			mass_center_e_id[4] := new_edge(mass_center_v_id[4],mass_center_v_id[1]);
+			mass_center_e_id[5] := new_edge(mass_center_v_id[1],mass_center_v_id[5]);
+			mass_center_e_id[6] := new_edge(mass_center_v_id[2],mass_center_v_id[5]);
+			mass_center_e_id[7] := new_edge(mass_center_v_id[3],mass_center_v_id[5]);
+			mass_center_e_id[8] := new_edge(mass_center_v_id[4],mass_center_v_id[5]);
+			mass_center_e_id[9] := new_edge(mass_center_v_id[1],mass_center_v_id[6]);
+			mass_center_e_id[10] := new_edge(mass_center_v_id[2],mass_center_v_id[6]);
+			mass_center_e_id[11] := new_edge(mass_center_v_id[3],mass_center_v_id[6]);
+			mass_center_e_id[12] := new_edge(mass_center_v_id[4],mass_center_v_id[6]);
+			for (id_ind := 1; id_ind < 13; id_ind+=1) {
+				 set edge[mass_center_e_id[id_ind]] color green; 
+				 set edge[mass_center_e_id[id_ind]] bare;
+				 set edge[mass_center_e_id[id_ind]] noncontent;
+			     set edge[mass_center_e_id[id_ind]] fixed;
+			     set edge[mass_center_e_id[id_ind]] no_refine;
+				};
+			mass_center_f_id[1] := new_facet(mass_center_e_id[1],mass_center_e_id[6],-mass_center_e_id[5]);
+			mass_center_f_id[2] := new_facet(mass_center_e_id[2],mass_center_e_id[7],-mass_center_e_id[6]);
+			mass_center_f_id[3] := new_facet(mass_center_e_id[3],mass_center_e_id[8],-mass_center_e_id[7]);
+			mass_center_f_id[4] := new_facet(mass_center_e_id[4],mass_center_e_id[5],-mass_center_e_id[8]);
+			mass_center_f_id[5] := new_facet(-mass_center_e_id[1],mass_center_e_id[9],-mass_center_e_id[10]);
+			mass_center_f_id[6] := new_facet(-mass_center_e_id[2],mass_center_e_id[10],-mass_center_e_id[11]);
+			mass_center_f_id[7] := new_facet(-mass_center_e_id[3],mass_center_e_id[11],-mass_center_e_id[12]);
+			mass_center_f_id[8] := new_facet(-mass_center_e_id[4],mass_center_e_id[12],-mass_center_e_id[9]);
+			for (id_ind := 1; id_ind < 9; id_ind+=1)  {
+				 set facet[mass_center_f_id[id_ind]] tension 0; 
+				 set facet[mass_center_f_id[id_ind]] no_refine;
+				 set facet[mass_center_f_id[id_ind]] noncontent; 
+				 set facet[mass_center_f_id[id_ind]] color green
+				}
+			} */
+
+mass_center_draw
+
+
+

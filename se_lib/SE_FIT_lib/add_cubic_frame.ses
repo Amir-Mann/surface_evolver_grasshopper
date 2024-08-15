@@ -1,0 +1,35 @@
+v_id_1 := new_vertex(-0.5,-0.5,-0.5)
+v_id_2 := new_vertex( 0.5,-0.5,-0.5)
+v_id_3 := new_vertex( 0.5, 0.5,-0.5)
+v_id_4 := new_vertex(-0.5, 0.5,-0.5)
+v_id_5 := new_vertex(-0.5,-0.5, 0.5)
+v_id_6 := new_vertex( 0.5,-0.5, 0.5)
+v_id_7 := new_vertex( 0.5, 0.5, 0.5)
+v_id_8 := new_vertex(-0.5, 0.5, 0.5)
+
+e_id_1 := new_edge(v_id_1,v_id_2)
+set edge[e_id_1] color red
+e_id_2 := new_edge(v_id_2,v_id_3)
+set edge[e_id_2] color red
+e_id_3 := new_edge(v_id_3,v_id_4)
+set edge[e_id_3] color red
+e_id_4 := new_edge(v_id_4,v_id_1)
+set edge[e_id_4] color red
+e_id_5 := new_edge(v_id_5,v_id_6)
+set edge[e_id_5] color red
+e_id_6 := new_edge(v_id_6,v_id_7)
+set edge[e_id_6] color red
+e_id_7 := new_edge(v_id_7,v_id_8)
+set edge[e_id_7] color red
+e_id_8 := new_edge(v_id_8,v_id_5)
+set edge[e_id_8] color red
+e_id_9 := new_edge(v_id_1,v_id_5)
+set edge[e_id_9] color red
+e_id_10 := new_edge(v_id_2,v_id_6)
+set edge[e_id_10] color red
+e_id_11 := new_edge(v_id_3,v_id_7)
+set edge[e_id_11] color red
+e_id_12 := new_edge(v_id_4,v_id_8)
+set edge[e_id_12] color red
+
+

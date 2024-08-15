@@ -1,0 +1,4 @@
+foreach vertices vv  where on_constraint cyltube_cl_inner do 
+        { vv.X3 :=  (vv.z + scale*vertex[cap_z_min_vid].__velocity[3])
+        }
+

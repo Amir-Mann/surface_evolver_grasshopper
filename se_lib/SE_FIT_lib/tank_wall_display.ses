@@ -1,0 +1,44 @@
+//
+// Tank wall display
+//
+tank_half_open_mesh := {autodisplay off;
+						set edge where fixed color black; 
+                        foreach edge ee where ee.vertex[1].z == 0 and ee.vertex[2].z == 0 do {set ee where fixed color cyan};
+                        foreach edge ee where ee.vertex[1].y == 0 and ee.vertex[2].y == 0 do {set ee where fixed color cyan};
+                        set facet where fixed color clear;
+                        foreach edge ee where ee.vertex[1].y > 0 or ee.vertex[2].y > 0 do {set ee where fixed color clear}; 
+						autodisplay on;
+                        /*foreach facet ff where ff.edge[1].color == -1 or ff.edge[2].color == -1 or ff.edge[3].color == -1 do {set ff where fixed color -1}*/
+                       }
+tank_half_open_wall := {autodisplay off;
+						if element_on_bdry_idx == 1 then {element_on_bdry};
+						set facet where fixed color lightgray;
+						set edge where fixed and color == black color clear; /* set facet where fixed color lightgray;*/
+                        foreach edge ee where ee.vertex[1].y >= 0 or ee.vertex[2].y >= 0 do {if ee.__e_on_boundary == 0 then {set ee where fixed color clear}}; 
+                        foreach facet ff where ff.vertex[1].y <= 0 or ff.vertex[2].y <= 0 or ff.vertex[3].y <= 0 do {set ff color -1 where color == lightgray};
+                        foreach edge ee where ee.vertex[1].y <= 0 or ee.vertex[2].y <= 0 do {if ee.__e_on_boundary == 0 then {set ee where fixed color clear}}; 
+                        foreach facet ff where ff.vertex[1].y >= 0 or ff.vertex[2].y >= 0 or ff.vertex[3].y >= 0 do {set ff color lightgray where color == -1;};
+						set facet where color == lightgray frontcolor brown;
+						autodisplay on;
+                       }
+					   
+tank_quat_open_wall := {autodisplay off;
+						if element_on_bdry_idx == 1 then {element_on_bdry};
+						set edge where fixed and color == black color clear; /* set facet where fixed color lightgray;*/
+                        foreach edge ee where ee.vertex[1].y > 0 or ee.vertex[2].y > 0 do {if ee.__e_on_boundary == 0 then {set ee where fixed color clear}}; 
+                        foreach facet ff where ff.vertex[1].y < 0 or ff.vertex[2].y < 0 or ff.vertex[3].y < 0 do {set ff color -1 where color == lightgray};
+                        foreach edge ee where ee.vertex[1].y < 0 or ee.vertex[2].y < 0 do {if ee.__e_on_boundary == 0 then {set ee where fixed color clear}}; 
+                         foreach edge ee where ee.vertex[1].x < 0 or ee.vertex[2].x < 0 do {if ee.__e_on_boundary == 0 then {set ee where fixed color clear}}; 
+                       foreach facet ff where ff.vertex[1].y > 0 or ff.vertex[2].y > 0 or ff.vertex[3].y > 0 do {set ff color lightgray where color == -1;};
+                        foreach facet ff where ff.vertex[1].x < 0 or ff.vertex[2].x < 0 or ff.vertex[3].x < 0 do {set ff color -1 where color == lightgray};
+						set facet where color == lightgray frontcolor brown;
+						autodisplay on;
+                       }
+					   
+					   
+tank_full_open_wall := {autodisplay off;
+						set edge where fixed color clear; /* set facet where fixed color lightgray;*/
+                        foreach edge ee where ee.vertex[1].y > 0 or ee.vertex[2].y > 0 do {set ee where fixed color clear}; 
+						set facet color -1 where frontcolor == brown;
+						autodisplay on;
+                       }

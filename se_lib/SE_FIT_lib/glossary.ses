@@ -1,0 +1,1 @@
+initial_max_edge_length: maximum unfixed edge length used as a reference when performing convergence for rough, intermediate, and fine mesh.

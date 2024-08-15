@@ -1,0 +1,197 @@
+// interf_merge_content_free.ses
+// -- to process interface merging when two interfaces run into each other along a line that is the intersection between two constraints
+
+// Programmer: Yongkang Chen, yongkang@cecs.pdx.edu
+// Jul 18, 2013
+// Usage: interf_merge (inx_1, inx_2, id_1, id_2, id_3, id_4, id_5)
+// 		  inx_1: id number of the vertex 1
+// 		  inx_2: id number of the vertex 2
+//         id_1: id number of the constraint for vertex inx_1. 
+//         id_2: id number of the constraint for vertex inx_1.
+//         id_3: id number of the constraint for vertex inx_2. 
+//         id_4: id number of the constraint for vertex inx_2.
+//         id_5: id number of the body that the new generated facets should be on
+//
+//                \                  /
+//                 \                /
+//            id_4  \              /    id_2
+//        ___________\inx_2_______/inx_1__________
+//                   /            \
+//            id_3  /              \    id_1
+//                 /                \
+//                /                  \
+
+procedure interf_merge ( integer v_inx_1, integer v_inx_2, integer v_1_constr_id_1, integer v_1_constr_id_2, integer v_2_constr_id_1, integer v_2_constr_id_2, integer body_id )
+   { local inx;
+     local n_val;
+     local ginx;
+	 local v_nei_vid_1, v_nei_vid_2, v_nei_vid_3, v_nei_vid_4;
+	 local v_nei_e_1_dir, v_nei_e_2_dir, v_nei_e_3_dir, v_nei_e_4_dir, v_nei_e_5_dir, v_nei_e_6_dir;
+     local v_nei_eid_1, v_nei_eid_2, v_nei_eid_3, v_nei_eid_4, v_nei_eid_5, v_nei_eid_6;
+	 local v_1_nei_f_count, v_2_nei_f_count;
+	 v_1_nei_f_count := 0;
+	 v_2_nei_f_count := 0;
+     n_val := vertex[v_inx_1].valence; 
+     /* find id number of the edges of the vertex that stays on the walls */
+	 foreach vertex[v_inx_1].edge ee do 
+		{if ee on_constraint v_1_constr_id_1 and not on_constraint v_1_constr_id_2 then 
+			{v_nei_eid_1 := ee.id;
+			 if edge[v_nei_eid_1].vertex[1].id == v_inx_1 then
+				{v_nei_vid_1 := edge[v_nei_eid_1].vertex[2].id;
+				 v_nei_e_1_dir := 1;
+				}
+			 else
+				{v_nei_vid_1 := edge[v_nei_eid_1].vertex[1].id;
+				 v_nei_e_1_dir := 2;
+				};
+			};
+		 if ee on_constraint v_1_constr_id_2 and not on_constraint v_1_constr_id_1 then 
+			{v_nei_eid_2 := ee.id;
+			 if edge[v_nei_eid_2].vertex[1].id == v_inx_1 then
+				{v_nei_vid_2 := edge[v_nei_eid_2].vertex[2].id;
+				 v_nei_e_2_dir := 1;
+				} 
+			 else 
+				{v_nei_vid_2 := edge[v_nei_eid_2].vertex[1].id;
+				 v_nei_e_2_dir := 2;
+				}
+			}
+		};
+	 foreach vertex[v_inx_2].edge ee do 
+		{if ee on_constraint v_2_constr_id_1 and not on_constraint v_2_constr_id_2 then 
+			{v_nei_eid_3 := ee.id;
+			 if edge[v_nei_eid_3].vertex[1].id == v_inx_2 then
+				{v_nei_vid_3 := edge[v_nei_eid_3].vertex[2].id;
+				 v_nei_e_3_dir := 1;
+				}
+			 else
+				{v_nei_vid_3 := edge[v_nei_eid_3].vertex[1].id;
+				 v_nei_e_3_dir := 2;
+				};
+			};
+		 if ee on_constraint v_2_constr_id_2 and not on_constraint v_2_constr_id_1 then 
+			{v_nei_eid_4 := ee.id;
+			 if edge[v_nei_eid_4].vertex[1].id == v_inx_2 then
+				{v_nei_vid_4 := edge[v_nei_eid_4].vertex[2].id;
+				 v_nei_e_4_dir := 1;
+				} 
+			 else 
+				{v_nei_vid_4 := edge[v_nei_eid_4].vertex[1].id;
+				 v_nei_e_4_dir := 2;
+				}
+			}
+		};
+     /* create new edges */
+ 	 new_eid_1 := new_edge(v_nei_vid_1,v_nei_vid_3); 
+	 set edge[new_eid_1] constraint v_1_constr_id_1;
+	 /* set edge[new_eid_1] color yellow; */
+     new_eid_2 := new_edge(v_nei_vid_2, v_nei_vid_4);
+     set edge[new_eid_2] constraint v_1_constr_id_2;
+	 /* set edge[new_eid_2] color yellow; */
+	 new_eid_3 := new_edge(v_nei_vid_3, v_nei_vid_2);
+	 /* create new facets */
+	 foreach vertex[v_inx_1].facet ff do
+		{if ff.on_constraint v_1_constr_id_1  == 0 then
+			{if ff.on_constraint v_1_constr_id_2 == 0 then
+				{v_1_nei_f_count += 1;
+				 v_1_nei_fid := ff.id
+				}
+			}
+		};
+	 foreach vertex[v_inx_2].facet ff do
+		{if ff.on_constraint v_2_constr_id_1  == 0 then
+			{if ff.on_constraint v_2_constr_id_2 == 0 then
+				{v_2_nei_f_count += 1;
+				 v_2_nei_fid := ff.id
+				}
+			}
+		};
+	 if v_1_nei_f_count == 1 then
+		{foreach facet[v_1_nei_fid].edge ee do
+			{if ee.id != v_nei_eid_1 then
+				{if ee.id != v_nei_eid_2 then
+					{v_nei_eid_5 := ee.id
+					}
+				}
+			};
+		 if edge[v_nei_eid_5].vertex[1].id == v_nei_vid_1 then
+			{v_nei_e_5_dir := 1
+			}
+		 else
+			{v_nei_e_5_dir := 2
+			};
+		 dissolve facet[v_1_nei_fid];
+		 if v_2_nei_f_count == 1 then
+			{foreach facet[v_2_nei_fid].edge ee do
+				{if ee.id != v_nei_eid_3 then
+					{if ee.id != v_nei_eid_4 then
+						{v_nei_eid_6 := ee.id
+						}
+					}
+				};
+			 if edge[v_nei_eid_6].vertex[1].id == v_nei_vid_3 then
+				{v_nei_e_6_dir := 1
+				}
+			 else
+				{v_nei_e_6_dir := 2
+				};
+			 dissolve facet[v_2_nei_fid];
+			};
+	     vertex_merge(vertex[v_inx_1].id, vertex[v_inx_2].id);
+	      while vertex[v_inx_1].__v_constraint_list[1] >0 
+			do {unset vertex[v_inx_1] constraint vertex[v_inx_1].__v_constraint_list[2]};
+		 set vertex[v_inx_1] constraint v_1_constr_id_1;
+		 set vertex[v_inx_1] constraint v_1_constr_id_2;
+		 if v_nei_e_1_dir == 1 then
+			{if v_nei_e_3_dir == 1 then
+				{new_fid_1 := new_facet(-v_nei_eid_1, v_nei_eid_3, -new_eid_1)}
+			 else
+				{new_fid_1 := new_facet(-v_nei_eid_1,-v_nei_eid_1, -new_eid_1)};
+			}
+		 else
+			{if v_nei_e_3_dir == 1 then
+				{new_fid_1 := new_facet( v_nei_eid_1, v_nei_eid_3, -new_eid_1)}
+			 else
+				{new_fid_1 := new_facet( v_nei_eid_1,-v_nei_eid_3, -new_eid_1)};
+			};
+		 facet[new_fid_1].frontbody := body_id;   
+		 set facet[new_fid_1] frontcolor lightblue;
+		 set facet[new_fid_1] constraint v_1_constr_id_1;
+		 if v_nei_e_2_dir == 1 then
+			{if v_nei_e_4_dir == 1 then
+				{new_fid_2 := new_facet(-v_nei_eid_4, v_nei_eid_2, new_eid_2)}
+			 else
+				{new_fid_2 := new_facet( v_nei_eid_4, v_nei_eid_2, new_eid_2)};
+			}
+		 else
+			{if v_nei_e_4_dir == 1 then
+				{new_fid_2 := new_facet(-v_nei_eid_4, -v_nei_eid_2, new_eid_2)}
+			 else
+				{new_fid_2 := new_facet( v_nei_eid_4, -v_nei_eid_2, new_eid_2)};
+			};
+		 facet[new_fid_2].frontbody := body_id;   
+		 set facet[new_fid_2] frontcolor lightblue;
+		 set facet[new_fid_2] constraint v_1_constr_id_2;
+		 if v_nei_e_5_dir == 1 then
+			{new_fid_3 := new_facet(-v_nei_eid_5, new_eid_1, new_eid_3)
+			}
+		 else
+			{new_fid_3 := new_facet(v_nei_eid_5, new_eid_1, new_eid_3)
+			};
+		 facet[new_fid_3].frontbody := body_id;
+		 set facet[new_fid_3] frontcolor lightblue;
+ 		 set facet[new_fid_3] tension 1;
+		 if v_nei_e_6_dir == 1 then
+			{new_fid_4 := new_facet(v_nei_eid_6, -new_eid_2, -new_eid_3)
+			}
+		 else
+			{new_fid_4 := new_facet(-v_nei_eid_6, -new_eid_2, -new_eid_3)
+			};
+		 facet[new_fid_4].frontbody := body_id;
+		 set facet[new_fid_4] frontcolor lightblue;
+		 set facet[new_fid_4] tension 1;
+		};
+   }
+
+
+

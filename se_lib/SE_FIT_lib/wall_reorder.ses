@@ -1,0 +1,81 @@
+// wall_reorder.ses
+// -- to 
+
+// Programmer: Yongkang Chen, yongkang@cecs.pdx.edu
+
+// Usage: wall_reorder ()
+// Pick out the walls that are parallel to z-axis, and then reorder the walls into a continuous sequence. 
+// Right now only works for 4-prism with rectangular or square cross section. Once the order is figured out,
+// the next step is to solve for the coordinates of the intersection between the walls. 
+// For more general shape e.g. N-prism, a general way is in need to sort out the side walls based on the normal vectors.
+// 
+
+procedure wall_reorder ()
+	{
+	 define wall_order_idx_in_cc integer[wall_count];  /* cc: counter clockwise, first side wall is the one whose normal vector is parallel to -x axis, to match up with N-prism convention */
+	 define intersect_x real[wall_count-2];
+	 define intersect_y real[wall_count-2];
+	 for (idx := 1; idx < wall_count + 1; idx += 1)
+		{
+		 if wall_dir_cos_alpha[idx] == -1 then
+			{wall_order_idx_in_cc[1] := idx;
+			}
+		};
+	 for (idx := 1; idx < wall_count + 1; idx += 1)
+		{
+		 if wall_dir_cos_beta[idx] == -1 then
+			{wall_order_idx_in_cc[2] := idx;
+			}
+		};
+	 for (idx := 1; idx < wall_count + 1; idx += 1)
+		{
+		 if wall_dir_cos_alpha[idx] == 1 then
+			{wall_order_idx_in_cc[3] := idx;
+			}
+		};
+	 for (idx := 1; idx < wall_count + 1; idx += 1)
+		{
+		 if wall_dir_cos_beta[idx] == 1 then
+			{wall_order_idx_in_cc[4] := idx;
+			}
+		};
+	 for (idx := 1; idx < wall_count + 1; idx += 1)
+		{
+		 if wall_dir_cos_gamma[idx] == 1 then
+			{wall_order_idx_in_cc[5] := idx;
+			}
+		};
+	 for (idx := 1; idx < wall_count + 1; idx += 1)
+		{
+		 if wall_dir_cos_gamma[idx] == -1 then
+			{wall_order_idx_in_cc[6] := idx;
+			}
+		};
+	 local wall_1_id; 
+	 local wall_2_id;
+	 local numer;
+	 local denom;
+	 local intersect_id;
+	 for (idx := 1; idx < wall_count - 2; idx += 1)
+		{
+		 if idx == 4 then
+			{wall_1_id := wall_order_idx_in_cc[4];
+			 wall_2_id := wall_order_idx_in_cc[1];
+			 intersect_id := 1;
+			}
+		 else
+			{wall_1_id := wall_order_idx_in_cc[idx];
+			 wall_2_id := wall_order_idx_in_cc[idx+1];
+			 intersect_id := idx + 1;
+			};
+		 numer := (wall_dir_cos_beta[wall_2_id]*wall_dist_quant_p[wall_1_id] - wall_dir_cos_beta[wall_1_id]*wall_dist_quant_p[wall_2_id]);
+		 denom := (wall_dir_cos_alpha[wall_1_id]*wall_dir_cos_beta[wall_2_id] - wall_dir_cos_alpha[wall_2_id]*wall_dir_cos_beta[wall_1_id]);
+		 intersect_x[intersect_id] := numer/denom;
+		 numer := (wall_dir_cos_alpha[wall_2_id]*wall_dist_quant_p[wall_1_id] - wall_dir_cos_alpha[wall_1_id]*wall_dist_quant_p[wall_2_id]);
+		 denom := (wall_dir_cos_alpha[wall_2_id]*wall_dir_cos_beta[wall_1_id] - wall_dir_cos_alpha[wall_1_id]*wall_dir_cos_beta[wall_2_id]);
+		 intersect_y[intersect_id] := numer/denom;
+		};
+	}
+
+
+
