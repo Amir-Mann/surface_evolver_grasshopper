@@ -37,6 +37,7 @@ def create_mesh(file_string):
     verts_id_to_index = {}
     edges_to_verts = {}
     faces = []
+    full_faces = []
     mod = "add verts"
     for line in file_string.split("\n"):
         if mod == "add verts":
@@ -61,7 +62,13 @@ def create_mesh(file_string):
             elif len(line) > 3:
                 items = get_line_items(line)
                 if "fixed" in items:
-                    continue
+                    edge1, edge2, edge3 = items[1:4]
+                    assert edges_to_verts[edge1][1] == edges_to_verts[edge2][0]
+                    assert edges_to_verts[edge2][1] == edges_to_verts[edge3][0]
+                    assert edges_to_verts[edge3][1] == edges_to_verts[edge1][0]
+                    full_faces.append((verts_id_to_index[edges_to_verts[edge1][0]],
+                                       verts_id_to_index[edges_to_verts[edge2][0]],
+                                       verts_id_to_index[edges_to_verts[edge3][0]]))
                 edge1, edge2, edge3 = items[1:4]
                 assert edges_to_verts[edge1][1] == edges_to_verts[edge2][0]
                 assert edges_to_verts[edge2][1] == edges_to_verts[edge3][0]
@@ -69,10 +76,14 @@ def create_mesh(file_string):
                 faces.append((verts_id_to_index[edges_to_verts[edge1][0]], 
                               verts_id_to_index[edges_to_verts[edge2][0]], 
                               verts_id_to_index[edges_to_verts[edge3][0]]))
-    return (verts, faces)
+                full_faces.append((verts_id_to_index[edges_to_verts[edge1][0]],
+                                   verts_id_to_index[edges_to_verts[edge2][0]],
+                                   verts_id_to_index[edges_to_verts[edge3][0]]))
+
+    return (verts, faces, full_faces)
+
 
 def reconstruct_mesh(arguments, results_text):
-    arguments['result_mesh']['verts'], arguments['result_mesh']['faces'] = create_mesh(results_text)
-    import json
-    with open(r"C:\Evolver\surface_evolver_grasshopper\remeshing\samples\sample1.json", "w") as s:
-        json.dump(arguments['result_mesh'], s)
+    verts, faces, full_faces = create_mesh(results_text)
+    arguments['result_mesh']['verts'], arguments['result_mesh']['faces'] = verts, faces
+    arguments['result_fixed']['verts'], arguments['result_fixed']['faces'] = verts, full_faces
