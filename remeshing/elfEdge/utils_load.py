@@ -7,10 +7,16 @@ from half_edge import HalfEdgeModel
 from open3d.geometry import HalfEdge, TriangleMesh, HalfEdgeTriangleMesh # type: ignore
 
 
-SAMPLES_PATH = "/home/ehud/technion/surface_evolver_grasshopper/remeshing/samples/"
+SAMPLES_PATH = "/home/ehud/technion/surf/remeshing/samples/"
 
-def load_np_from_json(json_name):
-    json_path = os.path.join(SAMPLES_PATH, json_name)
+def load_np(filename):
+    if filename.endswith('.json'):
+        return load_np_from_json(filename)
+    elif filename.endswith('.obj'):
+        return load_np_from_obj(filename)
+
+def load_np_from_json(json_filename):
+    json_path = os.path.join(SAMPLES_PATH, json_filename)
     with open(json_path, 'r') as file:
         data = json.load(file)
     vertices = np.array(data['verts'], dtype=np.double) # shape (#vertices, 3)
@@ -18,8 +24,8 @@ def load_np_from_json(json_name):
     
     return vertices, triangles
 
-def load_np_from_obj(file_path):
-    obj_path = os.path.join(SAMPLES_PATH, file_path)
+def load_np_from_obj(obj_filename):
+    obj_path = os.path.join(SAMPLES_PATH, obj_filename)
     vertices, faces = [], []
     with open(obj_path, 'r') as file:
         for line in file:

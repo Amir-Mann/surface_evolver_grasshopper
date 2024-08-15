@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
+            "purpose": ["debug-in-terminal"]
         },
         {
             "name": "Main",
@@ -18,7 +19,17 @@
             "request": "launch",
             "program": "main.py",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
+            "purpose": ["debug-in-terminal"]
         },
+        {
+            "name": "MyHalfEdge",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "my_half_edge.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": ["debug-in-terminal"]
+          }
     ]
 }

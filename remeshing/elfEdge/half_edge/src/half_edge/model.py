@@ -107,15 +107,6 @@ class HalfEdgeModel:
 
     def get_edge_by_index(self, h_index:int) -> np.ndarray:
         return np.diff(self.get_vertices_by_edge(h_index), axis=0)
-    
-    def get_next_index_on_ring(self, h_index:int, clockwise:bool):
-        if clockwise:
-            th_index = self.get_twin_index(h_index)
-            return self.get_next_index(th_index)
-        else:
-            nh_index = self.get_next_index(h_index)
-            nnh_index = self.get_next_index(nh_index)
-            return self.get_twin_index(nnh_index)
 
     # get vertices and triangles methods
 
@@ -187,6 +178,14 @@ class HalfEdgeModel:
         return len(list(self.one_ring(h_index)))
 
     # ring methods
+    def get_next_index_on_ring(self, h_index:int, clockwise:bool):
+        if clockwise:
+            th_index = self.get_twin_index(h_index)
+            return self.get_next_index(th_index)
+        else:
+            nh_index = self.get_next_index(h_index)
+            nnh_index = self.get_next_index(nh_index)
+            return self.get_twin_index(nnh_index)
 
     def one_ring(self, h_index:int, clockwise:bool=True):
         last = h_index
@@ -196,14 +195,6 @@ class HalfEdgeModel:
             if nh_index == last:
                 break
             h_index = nh_index
-    
-    def edge_ring(self, h_index:int):
-        edge = lambda h: BiPoint(self.get_vertices_by_edge(h))
-        return map(edge, self.one_ring(h_index))
-
-    def triangle_ring(self, h_index:int):
-        triangle = lambda h: TriPoint(self.get_triangle_vertices_by_edge(h))
-        return map(triangle, self.one_ring(h_index))
 
     # find routines
     def find_h_index_by_vertex_index(self, vertex: int) -> int: # h_index
@@ -221,17 +212,13 @@ class HalfEdgeModel:
     
     # set vertices and triangles methods
 
-    def replace_vertex_by_index(self, index: int, new_vertex: np.ndarray):
-        self.vertices.insert(index, new_vertex)
-        self.vertices.pop(index+1)
-
     def replace_triangle_by_index(self, index: int, new_triangle: np.ndarray):
         self.triangles.insert(index, new_triangle)
         self.triangles.pop(index+1)
 
     def update_triangle_by_vertex_indices(self, h_index:int, v_out:int, v_target:int):
         t_index = self.get_triangle_index(h_index)
-        triangle = self.get_triangles_by_indices(t_index)
+        triangle = self.get_triangles_by_indices(t_index) #(3,)
         triangle[triangle==v_target] = v_out
         self.replace_triangle_by_index(t_index, triangle)
 
@@ -326,9 +313,6 @@ class HalfEdgeModel:
         
         # save unreferenced triangles
         self.unreferenced_triangles.extend([t0_index])
-        
-        
-        
     
     def edge_split(self, h0_index:int):
 
@@ -481,81 +465,6 @@ class HalfEdgeModel:
 
         # save unreferenced triangles
         self.unreferenced_triangles.extend([t0_index, t1_index])
-
-    def revert_edge_collapse(self, p_ring:list):
-
-        # get data 
-
-        h5_index = self.unreferenced_half_edges[-1]
-        h4_index = self.unreferenced_half_edges[-2]
-        h2_index = self.unreferenced_half_edges[-4]
-        h1_index = self.unreferenced_half_edges[-5]
-
-        h6_index = self.get_twin_index(h2_index)
-        h7_index = self.get_twin_index(h4_index)
-        h8_index = self.get_twin_index(h5_index)
-        h9_index = self.get_twin_index(h1_index)
-
-        v0_index, v3_index = self.get_vertex_indices(h4_index)
-        v1_index, v2_index = self.get_vertex_indices(h1_index)
-
-        # updates 
-
-        for h_index in p_ring:
-
-            _, v_index = self.get_vertex_indices(h_index)
-            
-            # update triangle 
-            self.update_triangle_by_vertex_indices(h_index, v1_index, v0_index)
-
-            if v_index == v3_index:
-                continue
-
-            # update half edge vertices
-
-            self.update_half_edge(
-                h_index,
-                vertex_indices=[v1_index, v_index]
-            )
-
-            th_index = self.get_twin_index(h_index)
-            self.update_half_edge(
-                th_index,
-                vertex_indices=[v_index, v1_index]
-            )
-
-        # update half edge twins
-
-        self.update_half_edge(
-            h6_index,
-            twin=h2_index
-        )
-
-        self.update_half_edge(
-            h9_index,
-            twin=h1_index,
-            vertex_indices=[v2_index, v1_index]
-        )
-
-        self.update_half_edge(
-            h7_index,
-            twin=h4_index
-        )
-
-        self.update_half_edge(
-            h8_index,
-            twin=h5_index,
-            vertex_indices=[v1_index, v3_index]
-        )
-
-        # remove unreferenced half edges
-        self.unreferenced_half_edges = self.unreferenced_half_edges[:-6]
-
-        # remove unreferenced triangles
-        self.unreferenced_triangles = self.unreferenced_triangles[:-2]
-
-        # remove unreferenced vertices
-        self.unreferenced_vertices.pop()
 
     def edge_flip(self, h0_index:int):
 

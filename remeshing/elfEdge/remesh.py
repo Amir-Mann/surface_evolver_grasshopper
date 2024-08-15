@@ -12,11 +12,12 @@ def remesh(he_model: HalfEdgeModel, l=0):
     
     seen_edges = set()
     # split long edges
-    for h_idx in range(len(he_model.half_edges)):
+    E = len(he_model.half_edges)
+    for h_idx in range(E):
         if h_idx in seen_edges or h_idx in he_model.unreferenced_half_edges:
             continue
         edge_length = he_model.edge_len(h_idx)
-        if edge_length > (5*l/4):
+        if edge_length > (4*l/3):
             if he_model.get_twin_index(h_idx)==-1:
                 he_model.edge_split_boundary(h_idx)    
             else:
@@ -24,9 +25,18 @@ def remesh(he_model: HalfEdgeModel, l=0):
         seen_edges.add(h_idx)
         seen_edges.add(he_model.get_twin_index(h_idx))
     # collpase short edges
-    # make sure not splitting edge that is boundary, or that one of its vertices is boundary
+    seen_edges = set()
+    # make sure not collapsing edge that is boundary, or that one of its vertices is boundary
+    # also
+    # https://stackoverflow.com/questions/26871162/half-edge-collapse
     # also
     # https://stackoverflow.com/questions/27049163/mesh-simplification-edge-collapse-conditions
+    for h_idx in range(E):
+        if h_idx in seen_edges or h_idx in he_model.unreferenced_half_edges:
+            continue
+        edge_length = he_model.edge_len(h_idx)
+        if edge_length < (4*l/5):
+            he_model.edge_collapse(h_idx)
     
     # flip edges
     # skip boundary edges, or edges like 2, where flipping will create 
