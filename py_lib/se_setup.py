@@ -26,8 +26,7 @@ def get_fe_str(arguments):
         fe_file_str += f'read "{os.path.join(arguments["SEFIT_LIB_PATH"], "computation_kernel.ses")}"\n'.replace('\\', '\\\\')
         fe_file_str += f'read "{os.path.join(arguments["SEFIT_LIB_PATH"], "eigenvalue_study.ses")}"\n'.replace('\\', '\\\\')
         fe_file_str += f'read "{os.path.join(arguments["SEFIT_LIB_PATH"], "convergence_operation.ses")}"\n'.replace('\\', '\\\\')
-        
-        fe_file_str += f''
+        fe_file_str += f'read "{os.path.join(arguments["BASE_PATH"], "surface_evolver_grasshopper", "se_lib", "docstring.ses")}"\n'.replace('\\', '\\\\')
 
 
     fe_file_str += f"optimize_step := {LEFT_QURLY_BRACKET} g; // A general function looking for minimum\n"
@@ -36,29 +35,30 @@ def get_fe_str(arguments):
     fe_file_str += f"    hessian_seek;\n"
     fe_file_str += f"    o;\n"
     fe_file_str += f"{RIGHT_QURLY_BRACKET}\n"
-<<<<<<< HEAD
     
     path_for_fe = arguments['TEMP_DMP_PATH'].replace("\\", "\\\\")
     fe_file_str += f'dump_file := {LEFT_QURLY_BRACKET} dump "{path_for_fe}" {RIGHT_QURLY_BRACKET}\n'
-=======
     fe_file_str += f"target_length := {initial_target_length:.2f};\n"
-    fe_file_str += f"remesh_step := {LEFT_QURLY_BRACKET}t target_length/16*9; l target_length/16*25; V 2; u{RIGHT_QURLY_BRACKET}\n"
->>>>>>> 76815b0d1c50aeb38ea703984590787470dd1ef0
+    fe_file_str += f"loose_remesh_step := {LEFT_QURLY_BRACKET}t target_length/16*9; l target_length/16*25; V 2; u; u;{RIGHT_QURLY_BRACKET}\n"
+    fe_file_str += f"remesh_step := {LEFT_QURLY_BRACKET}t target_length/4*3; l target_length/4*5; V 2; u; u;{RIGHT_QURLY_BRACKET}\n"
 
     if not arguments['INTER_ACTIVE']:
         for r in range(arguments['R_INPUT']):
             if r != 0:
-                fe_file_str += "remesh_step; remesh_step;\n"
+                fe_file_str += "loose_remesh_step; loose_remesh_step;\n"
                 fe_file_str += "target_length := target_length / 2;\n"
-                fe_file_str += "remesh_step; remesh_step;\n"
+                fe_file_str += "loose_remesh_step; loose_remesh_step;\n"
             else:
-                fe_file_str += "remesh_step; remesh_step;\n"
+                fe_file_str += "loose_remesh_step; loose_remesh_step;\n"
             fe_file_str += "optimize_step;\n"
 
-        fe_file_str += f"g {arguments['G_INPUT']}; // finall settling down\n"
+        fe_file_str += f"remesh_step; optimize_step; remesh_step; optimize_step; // Attempt better remeshing\n"
+        fe_file_str += f"optimize_step; loose_remesh_step; optimize_step; // finall settling down - stay true to the physics. \n"
         fe_file_str += "dump_file\n"
         fe_file_str += "q\n"
         fe_file_str += "q\n"
+    else:
+        fe_file_str += 'printf "\\n\\n\\n\\n\\n\\n\\n\\n"; print_help;'
         
     
     return fe_file_str

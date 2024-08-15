@@ -1,0 +1,30 @@
+// Docstring for the interactive mode of Surface Involver integration into grasshopper.
+print_help := { printf "\n";
+    printf "This is an interactive mode for the MannHadad Surface Evolver plugin for Grasshopper\n";
+    printf "There should be an open window displaying the current state of the evolver, on light blue background.\n";
+    printf "When you finished optimizing your model, use 'dump_file' function to save, then you can safely close this window, or exit by writing the 'quit' command twice.\n";
+    printf "Until this process concludes, Grasshopper and Rhino would stay stuck.\n";
+    printf "\n";
+    printf "Useful commands by the MannHadad:\n";
+    printf "    'optimize_step'     - Runs a single optimization step, towards the minimum energy shape. Ignores mesh quality.\n";
+    printf "    'remesh_step'       - Optimizes mesh quality, Should sattle down in 3-5 iterations but might break the optimal shape.\n";
+    printf "    'loose_remesh_step' - Optimizes mesh quality, allowing some uneven triangles, better for really bad boundaries (small / large edges) or unconverged shapes.\n";
+    printf "    'target_length := target_length / 2' - Making the target edge length smaller for the remeshing steps.\n";
+    printf "    'dump_file'         - Save\n";
+    printf "    'print_help'              - display this help message\n";
+    printf "\n";
+    printf "Useful commands by Surface Evolver:\n";
+    printf "    'r'       - Divides all edges lengths by half.\n";
+    printf "    'g <num>' - Takes <num> gradient steps.\n";
+    printf "    'quit'    - quit the current simulation, use twice to exit the simulator all together.\n";
+    printf "    'set body target <volume> where id == 1' - Set the main body's volume to <volume> (in our testing usually a negative number around -25000).\n";
+    printf "    *see https://kenbrakke.com/evolver/html/commands.htm for more command language       documentation.\n";
+    printf "    *see https://kenbrakke.com/evolver/html/single.htm   for more signle letter commands documentation.\n";
+    printf "\n";
+    printf "Useful commands by SE-FIT:\n";
+    printf "    'MAX_STEPS := <num>'    - Set the maximum allowed iteration of a spesific convergence step inside SE-FIT to run. Added code to SE-FIT\n";
+    printf "    'ps_conv_run_rough'     - Run SE-FIT's rough convergence loop.\n";
+    printf "    'ps_conv_run_fine'      - Run SE-FIT's fine convergence loop.\n";
+    printf "    *see surface_evolver_grasshopper.se_lib.SE_FIT_lib.convergence_operation.ses for other operations and SE-FIT settings\n";
+    printf "    *DISCLAIMER: Stopping an SE-FIT function call using Ctrl-C can break the program, the SE-FIT Gui offers better interface for such fine control.\n";
+}
