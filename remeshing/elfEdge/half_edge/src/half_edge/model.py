@@ -467,9 +467,7 @@ class HalfEdgeModel:
         self.unreferenced_triangles.extend([t0_index, t1_index])
 
     def edge_flip(self, h0_index:int):
-
         # get data
-
         h1_index = self.get_next_index(h0_index)
         h2_index = self.get_next_index(h1_index)
         h3_index = self.get_twin_index(h0_index)
@@ -488,63 +486,29 @@ class HalfEdgeModel:
         v2_index, v3_index = self.get_vertex_indices(h1_index)
         v0_index, v1_index = self.get_vertex_indices(h4_index)
 
-        # Update half edges
+        # Update Half edges
+        self.update_half_edge(h0_index, vertex_indices=[v3_index, v1_index])
 
-        self.update_half_edge(
-            h0_index,
-            vertex_indices=[v3_index, v1_index]
+        self.update_half_edge(h1_index, twin=h9_index, vertex_indices=[v1_index, v2_index]
         )
 
-        self.update_half_edge(
-            h1_index,
-            twin=h9_index,
-            vertex_indices=[v1_index, v2_index]
-        )
+        self.update_half_edge(h2_index, twin=h6_index, vertex_indices=[v2_index, v3_index])
 
-        self.update_half_edge(
-            h2_index,
-            twin=h6_index,
-            vertex_indices=[v2_index, v3_index]
-        )
+        self.update_half_edge(h3_index, vertex_indices=[v1_index, v3_index])
 
-        self.update_half_edge(
-            h3_index,
-            vertex_indices=[v1_index, v3_index]
-        )
+        self.update_half_edge(h4_index, twin=h7_index, vertex_indices=[v3_index, v0_index])
 
-        self.update_half_edge(
-            h4_index,
-            twin=h7_index,
-            vertex_indices=[v3_index, v0_index]
-        )
+        self.update_half_edge(h5_index, twin=h8_index, vertex_indices=[v0_index, v1_index])
 
-        self.update_half_edge(
-            h5_index,
-            twin=h8_index,
-            vertex_indices=[v0_index, v1_index]
-        )
+        self.update_half_edge(h6_index, twin=h2_index)
 
-        self.update_half_edge(
-            h6_index,
-            twin=h2_index
-        )
+        self.update_half_edge(h7_index, twin=h4_index)
 
-        self.update_half_edge(
-            h7_index,
-            twin=h4_index
-        )
+        self.update_half_edge(h8_index, twin=h5_index)
 
-        self.update_half_edge(
-            h8_index,
-            twin=h5_index
-        )
+        self.update_half_edge(h9_index, twin=h1_index)
 
-        self.update_half_edge(
-            h9_index,
-            twin=h1_index
-        )
-
-        # Update triangles
+        # Update Triangles
         self.replace_triangle_by_index(t0_index, np.array([v1_index, v2_index, v3_index]))
         self.replace_triangle_by_index(t1_index, np.array([v0_index, v1_index, v3_index]))
 
@@ -576,14 +540,11 @@ class HalfEdgeModel:
         p_ring = []
 
         for h_index in v1_ring:
-
             _, v_index = self.get_vertex_indices(h_index)
-
             if v_index in (v0_index, v2_index):
                 continue
 
-            # update triangle 
-
+            # Update triangles 
             self.update_triangle_by_vertex_indices(h_index, v0_index, v1_index)
 
             p_ring.append(h_index) 
@@ -591,42 +552,21 @@ class HalfEdgeModel:
             if v_index == v3_index:
                 continue
 
-            # update half edge vertices
-
-            self.update_half_edge(
-                h_index,
-                vertex_indices=[v0_index, v_index]
-            )
+            # Update half edge vertices
+            self.update_half_edge(h_index, vertex_indices=[v0_index, v_index])
 
             th_index = self.get_twin_index(h_index)
-            self.update_half_edge(
-                th_index,
-                vertex_indices=[v_index, v0_index]
-            )
+            self.update_half_edge(th_index, vertex_indices=[v_index, v0_index])
 
+        
         # update half edge twins
+        self.update_half_edge(h6_index, twin=h9_index)
 
-        self.update_half_edge(
-            h6_index,
-            twin=h9_index
-        )
+        self.update_half_edge(h9_index, twin=h6_index, vertex_indices=[v2_index, v0_index])
 
-        self.update_half_edge(
-            h9_index,
-            twin=h6_index,
-            vertex_indices=[v2_index, v0_index]
-        )
+        self.update_half_edge(h7_index, twin=h8_index)
 
-        self.update_half_edge(
-            h7_index,
-            twin=h8_index
-        )
-
-        self.update_half_edge(
-            h8_index,
-            twin=h7_index,
-            vertex_indices=[v0_index, v3_index]
-        )
+        self.update_half_edge(h8_index, twin=h7_index, vertex_indices=[v0_index, v3_index])
 
         # save unreferenced half edges
         self.unreferenced_half_edges.extend([h0_index, h1_index, h2_index, h3_index, h4_index, h5_index])

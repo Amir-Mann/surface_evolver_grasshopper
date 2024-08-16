@@ -12,7 +12,7 @@ import pdb
 he_model = load_halfedge_model_from_obj("hex_grid_uv_03_ccw.obj")
 # or19 = list(he_model.one_ring(19))
 # or19 = list(he_model.one_ring(22))
-he_model.edge_collapse(29)
+he_model.edge_flip(5)
 # he_model.edge_split_boundary(15)
 # he_model.edge_flip(45)
 # remesh(he_model, 0)

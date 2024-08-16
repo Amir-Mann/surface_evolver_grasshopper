@@ -1,7 +1,7 @@
 import numpy as np
 import open3d as o3d
 
-from half_edge import HalfEdgeModel
+from my_half_edge import HalfEdgeModel
 from utils_vis import vis_halfedge_model
 
 def remesh(he_model: HalfEdgeModel, l=0):
