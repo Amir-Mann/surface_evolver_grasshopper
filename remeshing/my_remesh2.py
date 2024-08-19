@@ -304,8 +304,8 @@ if __name__=="__main__":
     # he_trimesh = HalfEdgeTriMesh.from_model_path("hex_grid_uv_03_ccw.obj")
     std_edge_len_before = std_deviation_edge_len(he_trimesh)
     std_face_area_before = std_deviation_face_area(he_trimesh)
-    # he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
-    he_trimesh.visualize()
+    he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
+    # he_trimesh.visualize()
     L = he_trimesh.get_average_edge_length()
     
     remesher = IsotropicRemesher(he_trimesh)
