@@ -12,7 +12,7 @@ def vis_he_trimesh(he_trimesh, wireframe=True, v_labels=True, e_labels=True, f_l
     F = he_trimesh.F
     vertices_d = he_trimesh.get_vertices()
     edge_midpoints_d = he_trimesh.get_edges_midpoints()
-    face_midpoints_d = he_trimesh.get_triangles_midpoints()
+    face_midpoints_d = he_trimesh.get_faces_midpoints()
 
     fig = go.Figure()
 
@@ -110,7 +110,7 @@ def vis_he_trimesh_o3d(he_trimesh, wireframe=True, v_labels=True, e_labels=True,
             # vis.add_3d_label(e_midpoint, he_string)
         
     if f_labels:
-        face_midpoints = he_trimesh.get_triangles_midpoints()
+        face_midpoints = he_trimesh.get_faces_midpoints()
         # face_midpoints_np = np.array(list(face_midpoints.values())).astype(np.double)
         # cloud = o3d.geometry.PointCloud(); cloud.points = o3d.utility.Vector3dVector(face_midpoints_np)
         # vis.add_geometry("Face Cloud", cloud)

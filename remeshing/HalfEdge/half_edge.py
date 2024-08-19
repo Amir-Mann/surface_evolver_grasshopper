@@ -208,7 +208,7 @@ class HalfEdgeTriMesh:
             seen_edges.add(self.half_edges[h_index].twin)
         return midpoints_d
     
-    def get_triangles_midpoints(self):
+    def get_faces_midpoints(self):
         F = len(self.F)
         midpoints_d = dict()
         for t_idx in range(F):
@@ -225,14 +225,10 @@ class HalfEdgeTriMesh:
             num_edges += 1
         return total_length/num_edges
     
-    def get_triangle_indices_by_edge(self, h_index:int): 
-        # returns (3,) int32 of of the triangle indices that the half-edge belongs to
-        f_index = self.half_edges[h_index].face
-        return self.F[f_index]
-    
     def get_triangle_vertices_by_edge(self, h_index:int):
         # returns (3,3) float64 of the triangle vertices that the half-edge belongs to
-        t_verts_indices = self.get_triangle_indices_by_edge(h_index) # (3,) int32
+        f_index = self.half_edges[h_index].face
+        t_verts_indices = self.F[f_index] # (3,) int32
         # sort indices so first one will be like h_index source vertex
         source_vertex_index = self.half_edges[h_index].vertex_indices[0]
         roll_idx = np.argwhere(t_verts_indices==source_vertex_index)
@@ -338,7 +334,6 @@ class HalfEdgeTriMesh:
             weighted_normal_ring.append(self.normal(h_idx, normalize=False))
             
         return vertex_ring, weighted_normal_ring
-        
     
     def compactness_ring(self, h_index:int):
         # for h_index triangle ring, how much each triangle is close to an equilateral triangle
@@ -688,7 +683,6 @@ class HalfEdgeTriMesh:
         self.replace_triangle_by_index(t0_index, np.array([v1_index, v2_index, v3_index]))
         self.replace_triangle_by_index(t1_index, np.array([v0_index, v1_index, v3_index]))
     
-    
     def edge_collapse(self, h0_index: int) -> list:    
         he0 = self.half_edges[h0_index]
         assert not (he0.source_bdry and he0.target_bdry), f"edge_collapse({he0}) called but has both source and target vertices on boundary"
@@ -757,7 +751,6 @@ class HalfEdgeTriMesh:
         self.unreferenced_vertices.extend([v1_index])
 
         return p_ring 
-    
     
     def revert_edge_collapse(self, p_ring:list):
         # p_ring contains all half edges that have v1 as source, except h1 and h3
