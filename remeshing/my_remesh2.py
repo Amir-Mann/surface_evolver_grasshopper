@@ -24,8 +24,8 @@ class IsotropicRemesher:
     def has_collinear_edges(self, h0_index: int):
         _, h2_index, _, h5_index = self.model.adjacent_half_edges(h0_index) # h1, h2, h4, h5
 
-        v3_index, v0_index = self.model.get_vertex_indices(h2_index)
-        v1_index, v2_index = self.model.get_vertex_indices(h5_index)
+        v3_index, v0_index = self.half_edges[h2_index].vertex_indices
+        v1_index, v2_index = self.half_edges[h5_index].vertex_indices
 
         vertices = self.model.get_vertices_by_indices([v1_index, v2_index, v3_index])
         if is_collinear(vertices): return True
@@ -38,8 +38,8 @@ class IsotropicRemesher:
     def has_small_edges(self, h_index:int, L_high:float):
         # check that new edges are smaller than high.
         # if this is true than we don't collapse edge
-        v0_index = self.model.get_start_vertex_index(h_index)
-        th_index = self.model.get_twin_index(h_index)
+        v0_index = self.half_edges[h_index].vertex_indices[0]
+        th_index = self.half_edges[h_index].twin
         v1_index_ring = self.model.vertex_index_ring(th_index)
         for vi in v1_index_ring:
             # go over each of the edges that will be created if the collapse happens
@@ -52,7 +52,7 @@ class IsotropicRemesher:
 
     def has_collapse_connectivity(self, h_index:int):
         v0_ring = set(self.model.vertex_index_ring(h_index))
-        th_index = self.model.get_twin_index(h_index)
+        th_index = self.half_edges[h_index].twin
         v1_ring = set(self.model.vertex_index_ring(th_index))
         return len(v0_ring.intersection(v1_ring)) == 2
 
@@ -61,7 +61,7 @@ class IsotropicRemesher:
         if self.model.valence(h0_index) == 3:
             return False
         
-        h3_index = self.model.get_twin_index(h0_index)
+        h3_index = self.half_edges[h0_index].twin
 
         if self.model.valence(h3_index) == 3:
             return False
@@ -97,7 +97,7 @@ class IsotropicRemesher:
 
             # skip if twin already tested
 
-            h3_index = self.model.get_twin_index(h0_index)
+            h3_index = self.half_edges[h0_index].twin
 
             if h3_index in skip:
                 continue
@@ -146,12 +146,12 @@ class IsotropicRemesher:
     def equalize_valences(self, sliver:bool=False, foldover:float=0):
 
         n = 0
-        E = len(self.model.half_edges)
+        E = len(self.half_edges)
         skip = []
 
         for h0_index in range(E):
             # skip if twin already tested
-            h3_index = self.model.get_twin_index(h0_index)
+            h3_index = self.half_edges[h0_index].twin
 
             if h3_index in skip:
                 continue
@@ -217,7 +217,7 @@ class IsotropicRemesher:
             if h_index in self.model.unreferenced_half_edges:
                 continue
             
-            v_index = self.model.get_start_vertex_index(h_index)
+            v_index = self.half_edges[h_index].vertex_indices[0]
 
             if v_index in skip:
                 continue 
@@ -261,7 +261,7 @@ class IsotropicRemesher:
         he0 = self.model.half_edges[h_index]
         if he0.source_bdry:
             return
-        v0_idx = self.model.get_start_vertex_index(h_index)
+        v0_idx = self.half_edges[h_index].vertex_indices[0]
         v0_pos = self.model.get_start_vertex_by_edge(h_index)
         vertex_ring, weighted_normal_ring = self.model.gravity_ring(h_index) # (n,3) float64, (n,3) float64
         area_ring = np.array([np.linalg.norm(v) for v in weighted_normal_ring]) # (n,) float64
@@ -296,7 +296,8 @@ if __name__=="__main__":
     # he_trimesh = HalfEdgeTriMesh.from_model_path("hex_grid_uv_03_ccw.obj")
     std_edge_len_before = std_deviation_edge_len(he_trimesh)
     std_face_area_before = std_deviation_face_area(he_trimesh)
-    he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
+    # he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
+    he_trimesh.visualize()
     L = he_trimesh.get_average_edge_length()
     
     remesher = IsotropicRemesher(he_trimesh)

@@ -19,7 +19,7 @@ def vis_he_trimesh(he_trimesh, wireframe=True, v_labels=True, e_labels=True, f_l
     # Plot wireframe of the triangle mesh
     if wireframe:
         for f_idx, f_verts_inds in enumerate(F):
-            if f_idx in he_trimesh.unreferenced_triangles:
+            if f_idx in he_trimesh.unreferenced_faces:
                 continue
             i, j, k = f_verts_inds
             fig.add_trace(go.Scatter3d(x=[V[i, 0], V[j, 0], V[k, 0], V[i, 0]],
@@ -38,7 +38,7 @@ def vis_he_trimesh(he_trimesh, wireframe=True, v_labels=True, e_labels=True, f_l
     if e_labels:
         for he_idx, edge_midpoint in edge_midpoints_d.items():
             he_face_idx = he_trimesh.half_edges[he_idx].face
-            twin_idx = he_trimesh.get_twin_index(he_idx)
+            twin_idx = he_trimesh.half_edges[he_idx].twin
             twin_face_idx = he_trimesh.half_edges[twin_idx].face
             he_string = "{},{}".format(he_idx, twin_idx) if he_face_idx < twin_face_idx else "{},{}".format(twin_idx, he_idx)
             fig.add_trace(go.Scatter3d(x=[edge_midpoint[0]], y=[edge_midpoint[1]], z=[edge_midpoint[2]], mode='markers+text', text=[he_string], textposition="top center", marker=dict(size=5, color='green')))
@@ -71,12 +71,12 @@ def get_clean_o3d_trimesh(he_trimesh):
     vertices = o3d.utility.Vector3dVector(vert_copy)
     faces = o3d.utility.Vector3iVector(faces_copy)
     triangle_mesh = TriangleMesh(vertices, faces)
-    triangle_mesh.remove_triangles_by_index(he_trimesh.unreferenced_triangles)
+    triangle_mesh.remove_triangles_by_index(he_trimesh.unreferenced_faces)
     triangle_mesh.remove_vertices_by_index(he_trimesh.unreferenced_vertices)
     return triangle_mesh
    
 def vis_he_trimesh_o3d(he_trimesh, wireframe=True, v_labels=True, e_labels=True, f_labels=True):
-    referenced_vertices_d = he_trimesh.get_vertices()
+    referenced_vertices_d = he_trimesh.get_vertices() # TODO remove
 
     # create o3d mesh
     mesh = get_clean_o3d_trimesh(he_trimesh)
@@ -103,7 +103,7 @@ def vis_he_trimesh_o3d(he_trimesh, wireframe=True, v_labels=True, e_labels=True,
         # vis.add_geometry("Edge Cloud", cloud)
         for he_idx, e_midpoint in edge_midpoints.items():
             he_face_idx = he_trimesh.half_edges[he_idx].face
-            twin_idx = he_trimesh.get_twin_index(he_idx)
+            twin_idx = he_trimesh.half_edges[he_idx].twin
             twin_face_idx = he_trimesh.half_edges[twin_idx].face
             he_string = "{},{}".format(he_idx, twin_idx) if he_face_idx < twin_face_idx else "{},{}".format(twin_idx, he_idx)
             vis.add_3d_label(e_midpoint-[0.0,0.05,0.0], he_string)

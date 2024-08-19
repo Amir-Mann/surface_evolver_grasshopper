@@ -11,7 +11,7 @@ def std_deviation_edge_len(he_trimesh:HalfEdgeTriMesh):
 def std_deviation_face_area(he_trimesh:HalfEdgeTriMesh):
     cross_product_norms = []
     for face_index, face_verts_inds in enumerate(he_trimesh.F):
-        if face_index in he_trimesh.unreferenced_triangles:
+        if face_index in he_trimesh.unreferenced_faces:
             continue
         vertices = he_trimesh.V[face_verts_inds]
         cross_product_norms.append(utils_math.get_cross_product_norm(vertices))
