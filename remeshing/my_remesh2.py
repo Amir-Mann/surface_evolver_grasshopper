@@ -12,6 +12,14 @@ class IsotropicRemesher:
     def half_edges(self):
         return self.model.half_edges
 
+    @property
+    def V(self):
+        return self.model.V
+    
+    @property
+    def F(self):
+        return self.model.F
+    
     def visualize(self, *args, **kwargs):
         self.model.visualize(*args, **kwargs)
     
@@ -27,10 +35,10 @@ class IsotropicRemesher:
         v3_index, v0_index = self.half_edges[h2_index].vertex_indices
         v1_index, v2_index = self.half_edges[h5_index].vertex_indices
 
-        vertices = self.model.get_vertices_by_indices([v1_index, v2_index, v3_index])
+        vertices = self.V[[v1_index, v2_index, v3_index]]
         if is_collinear(vertices): return True
         
-        vertices = self.model.get_vertices_by_indices([v0_index, v1_index, v3_index])
+        vertices = self.V[[v0_index, v1_index, v3_index]]
         if is_collinear(vertices): return True
 
         return False
@@ -44,7 +52,7 @@ class IsotropicRemesher:
         for vi in v1_index_ring:
             # go over each of the edges that will be created if the collapse happens
             # and check if the length is smaller than L_high
-            vs = self.model.get_vertices_by_indices([vi, v0_index]) # (2,3) float64
+            vs = self.V[[vi, v0_index]] # (2,3) float64
             edge_length = np.linalg.norm(vs[0] - vs[1])
             if edge_length > L_high:
                 return False

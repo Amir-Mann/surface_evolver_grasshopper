@@ -129,9 +129,6 @@ class HalfEdgeTriMesh:
         if target_bdry is not None: he.target_bdry = target_bdry
         
     ############ GETTERS ############
-    def get_vertices_by_indices(self, indices):
-        # return (n,3) float64 for n=len(indices)
-        return self.V[indices]
     
     def is_he_boundary(self, h_index):
         twin_index = self.half_edges[h_index].twin
@@ -157,20 +154,20 @@ class HalfEdgeTriMesh:
 
     def get_face_midpoint(self, t_idx):
         indices = self.F[t_idx]
-        vertices_t = self.get_vertices_by_indices(indices)
+        vertices_t = self.V[indices]
         return np.mean(vertices_t, axis=0)
     
     def get_start_vertex_by_edge(self, h_index:int):
         v0_index = self.half_edges[h_index].vertex_indices[0]
-        return self.get_vertices_by_indices(v0_index)
+        return self.V[v0_index]
     
     def get_end_vertex_by_edge(self, h_index:int):
         v1_index = self.half_edges[h_index].vertex_indices[1]
-        return self.get_vertices_by_indices(v1_index)
+        return self.V[v1_index]
     
     def get_vertices_by_edge(self, h_index):
         indices = self.half_edges[h_index].vertex_indices
-        return self.get_vertices_by_indices(indices)
+        return self.V[indices]
     
     def edge_len(self, h_index):
         vertices = self.get_vertices_by_edge(h_index)
@@ -396,7 +393,7 @@ class HalfEdgeTriMesh:
         v2_index, v3_index = self.half_edges[h1_index].vertex_indices
         v4_index = V+0
         # create new vertex
-        vertices = self.get_vertices_by_indices([v0_index, v2_index])
+        vertices = self.V[[v0_index, v2_index]]
         v4 = vertices.mean(axis=0)
         
         # create new half edges
@@ -612,7 +609,7 @@ class HalfEdgeTriMesh:
         t5 = np.array([v4_index, v2_index, v3_index])
         
         # create new vertex
-        vertices = self.get_vertices_by_indices([v0_index, v2_index])
+        vertices = self.V[[v0_index, v2_index]]
         v4 = vertices.mean(axis=0)
         
         # update half edges
