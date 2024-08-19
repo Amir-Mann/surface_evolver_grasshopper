@@ -3,7 +3,7 @@ import numpy as np
 import numpy.typing as npt
 from HalfEdge.utils_load import get_np_V_F
 from HalfEdge.utils_vis import vis_he_trimesh
-
+from HalfEdge.utils_math import get_normal, get_compactness, get_area
 class HalfEdge:
     def __init__(self, 
                  idx: int  =-1,
@@ -42,6 +42,7 @@ class HalfEdgeTriMesh:
         self.half_edges = []
         self.V = V # np (#verts,3) float64
         self.F = F # np (#faces,3) int32
+        self.n_vertices = len(V)
         self.unreferenced_vertices = []
         self.unreferenced_triangles = []
         self.unreferenced_half_edges = []
@@ -95,14 +96,16 @@ class HalfEdgeTriMesh:
 
     def __iter__(self):
         # iterate over referenced(!) edges(!) not half edges
-        seen_edges = set()
+        skip = set()
         E = len(self.half_edges)
         for h_index in range(E):
+            if h_index in self.unreferenced_half_edges:
+                continue
             twin_index = self.get_twin_index(h_index)
-            if h_index in seen_edges or twin_index in seen_edges:
+            if twin_index in skip:
                 continue
-            if h_index in self.unreferenced_half_edges or twin_index in self.unreferenced_half_edges:
-                continue
+            skip.add(twin_index)
+            
             yield h_index
     
     def visualize(self, wireframe:bool = True, v_labels:bool=True, e_labels:bool=True, f_labels:bool=True):
@@ -112,18 +115,18 @@ class HalfEdgeTriMesh:
             
     def create_half_edge(self, next:int=-1, face:int=-1, twin:int=-1, vertex_indices:list=[-1, -1], source_bdry:bool=False, target_bdry:bool=False):
         he_idx = len(self.half_edges)
-        h = HalfEdge(idx=he_idx, next=next, face=face, twin=twin, vertex_indices=vertex_indices)
+        h = HalfEdge(idx=he_idx, next=next, face=face, twin=twin, vertex_indices=vertex_indices, source_bdry=source_bdry, target_bdry=target_bdry)
         self.half_edges.append(h)
         return h
     
     def update_half_edge(self, h_index:int, next = None, face = None, twin = None, vertex_indices = None, source_bdry = None, target_bdry = None):
         he = self.half_edges[h_index]
-        if next: he.next = next
-        if face: he.face = face
-        if twin: he.twin = twin
-        if vertex_indices: he.vertex_indices = vertex_indices
-        if source_bdry: he.source_bdry = source_bdry
-        if target_bdry: he.target_bdry = target_bdry
+        if next is not None: he.next = next
+        if face is not None: he.face = face
+        if twin is not None: he.twin = twin
+        if vertex_indices is not None: he.vertex_indices = vertex_indices
+        if source_bdry is not None: he.source_bdry = source_bdry
+        if target_bdry is not None: he.target_bdry = target_bdry
         
     ############ GETTERS ############
     def get_vertices_by_indices(self, indices):
@@ -137,8 +140,21 @@ class HalfEdgeTriMesh:
     def is_he_collapsible(self, h_index):
         # an halfedge isn't collapsible if it's boundary, or both of its vertices are boundary
         he = self.half_edges[h_index]
-        return not (he.source_bdry and he.target_bdry)
-    
+        if (he.source_bdry and he.target_bdry):
+            return False
+        # check for connectivity, as in https://stackoverflow.com/a/27049418/4399305
+        # denote he source vertex as v0 and target vertex as v1
+        v0_ring = self.one_ring(h_index) # all he that have v0 as source
+        v1_ring = self.one_ring(he.twin) # all he that have v1 as source
+        
+        v0_ring_target_vertices = {self.half_edges[he_idx].vertex_indices[1] for he_idx in v0_ring}
+        v1_ring_target_vertices = {self.half_edges[he_idx].vertex_indices[1] for he_idx in v1_ring}
+        # check intersection
+        if len(v0_ring_target_vertices.intersection(v1_ring_target_vertices)) > 2:
+            return False
+        
+        # check for geometry, as in https://stackoverflow.com/a/27049418/4399305
+        
     def get_triangles_by_indices(self, indices: Union[int, List[int]]):
         return self.F[indices] # .copy()
     
@@ -146,15 +162,29 @@ class HalfEdgeTriMesh:
         indices = self.F[t_idx]
         vertices_t = self.get_vertices_by_indices(indices)
         return np.mean(vertices_t, axis=0)
-
+    
     def get_vertex_indices(self, h_index:int):
         return self.half_edges[h_index].vertex_indices
 
+    def get_start_vertex_index(self, h_index:int):
+        return self.half_edges[h_index].vertex_indices[0]
+    
+    def get_end_vertex_index(self, h_index:int):
+        return self.half_edges[h_index].vertex_indices[1]
+    
+    def get_start_vertex_by_edge(self, h_index:int):
+        v0_index = self.get_start_vertex_index(h_index)
+        return self.get_vertices_by_indices(v0_index)
+    
+    def get_end_vertex_by_edge(self, h_index:int):
+        v1_index = self.get_end_vertex_index(h_index)
+        return self.get_vertices_by_indices(v1_index)
+    
     def get_vertices_by_edge(self, h_index):
         indices = self.get_vertex_indices(h_index)
         return self.get_vertices_by_indices(indices)
     
-    def get_edge_length(self, h_index):
+    def edge_len(self, h_index):
         vertices = self.get_vertices_by_edge(h_index)
         return np.linalg.norm(vertices[0]-vertices[1])
     
@@ -183,8 +213,17 @@ class HalfEdgeTriMesh:
         vertices = self.get_vertices_by_edge(h_index)
         return np.mean(vertices, axis=0)
     
+    def get_vertices(self):
+        # get referenced vertices
+        referenced_vertices_d= dict() # map int to (3,) float64
+        for v_idx in range(0, len(self.V)):
+            if v_idx in self.unreferenced_vertices:
+                continue
+            referenced_vertices_d[v_idx] = self.V[v_idx]
+        return referenced_vertices_d
+    
     def get_edges_midpoints(self):
-        E = self.num_half_edges()
+        E = len(self.half_edges)
         seen_edges = set()
         midpoints_d = dict()
         for h_index in range(E):
@@ -196,8 +235,21 @@ class HalfEdgeTriMesh:
             seen_edges.add(self.get_twin_index(h_index))
         return midpoints_d
     
+    # def get_clean_V_F(self): # TODO remove
+    #     print("get_clean_V_F")
+    #     # print shapes
+    #     print(f"V shape: {self.V.shape}, F shape: {self.F.shape}")
+    #     # get clean copy of V, F, without unreferenced vertices and triangles
+    #     print(f"len(unreferenced_vertices): {len(self.unreferenced_vertices)}, len(unreferenced_triangles): {len(self.unreferenced_triangles)}")
+        
+    #     V = np.delete(self.V, self.unreferenced_vertices, axis=0)
+    #     F = np.delete(self.F, self.unreferenced_triangles, axis=0)
+    #     return V, F
+        
+        
+    
     def get_triangles_midpoints(self):
-        F = self.num_faces()
+        F = len(self.F)
         midpoints_d = dict()
         for t_idx in range(F):
             if t_idx in self.unreferenced_triangles:
@@ -209,9 +261,46 @@ class HalfEdgeTriMesh:
         total_length = 0
         num_edges = 0 # not half edges
         for edge_index in self:
-            total_length += self.get_edge_length(edge_index)
+            total_length += self.edge_len(edge_index)
             num_edges += 1
         return total_length/num_edges
+    
+    def get_triangle_indices_by_edge(self, h_index:int): 
+        # returns (3,) int32 of of the triangle indices that the half-edge belongs to
+        f_index = self.half_edges[h_index].face
+        return self.F[f_index]
+    
+    def get_triangle_vertices_by_edge(self, h_index:int):
+        # returns (3,3) float64 of the triangle vertices that the half-edge belongs to
+        t_verts_indices = self.get_triangle_indices_by_edge(h_index) # (3,) int32
+        # sort indices so first one will be like h_index source vertex
+        source_vertex_index = self.half_edges[h_index].vertex_indices[0]
+        roll_idx = np.argwhere(t_verts_indices==source_vertex_index)
+        if roll_idx:
+            t_verts_indices = np.roll(t_verts_indices, -roll_idx[0][0], axis=0)
+        t_verts_positions = self.V[t_verts_indices] # (3,3) float64
+        return t_verts_positions
+    
+    def valence(self, h_index:int):
+        # return number of edges that leave source vertex
+        # todo
+        h = self.half_edges[h_index]
+        v0_one_ring = list(self.one_ring(h_index))
+        return len(v0_one_ring)
+    
+    def adjacent_half_edges(self, h_index:int):
+        nh_index = self.get_next_index(h_index) # h1
+        nnh_index = self.get_next_index(nh_index) # h2
+        th_index = self.get_twin_index(h_index) # h3
+        nth_index = self.get_next_index(th_index) # h4
+        nnth_index = self.get_next_index(nth_index) # h5
+        return nh_index, nnh_index, nth_index, nnth_index # h1, h2, h4, h5
+    
+    def adjacent_triangles(self, h_index: int):
+        f0_index = self.half_edges[h_index].face
+        th_index = self.get_twin_index(h_index)
+        f1_index = self.half_edges[th_index].face
+        return f0_index, f1_index
     
     # set vertices and triangles methods
     def replace_triangle_by_index(self, t_index: int, new_t_verts_indices: np.ndarray): # new_t_verts_indices is (3,) int32
@@ -223,7 +312,10 @@ class HalfEdgeTriMesh:
         t_verts_indices[t_verts_indices==v_index_old] = v_index_new
         self.replace_triangle_by_index(t_index, t_verts_indices)
     
-    ############ ONE RING methods ############
+    def normal(self, h_index: int, normalize:bool=True) :
+        return get_normal(self.get_triangle_vertices_by_edge(h_index),normalize=normalize)
+    
+    ############ RING METHODS ############
     def get_next_index_on_ring(self, h_index:int, clockwise:bool):
         if clockwise:
             th_index = self.get_twin_index(h_index)
@@ -233,45 +325,94 @@ class HalfEdgeTriMesh:
             nnh_index = self.get_next_index(nh_index)
             return self.get_twin_index(nnh_index)
     
+    ### INDEX RING METHODS ###
     def one_ring(self, h_index:int, clockwise:bool=True):
-        # return half_edges whose starting vertices is like h_index's. returns in clockwise manner
+        # return half-edges whose source-vertex is like h_index's. returns in clockwise manner
         last = h_index
         while True:
             nh_index = self.get_next_index_on_ring(h_index, clockwise)
             yield nh_index
             if nh_index == last:
                 break
-            h_index = nh_index
+            h_index = nh_index 
+        
+    def vertex_index_ring(self, h_index:int):
+        # for h_index one ring, return list of the half-edges' target vertices indices
+        # i.e. a list of ints
+        # assume h_index is a half-edge with source vertex v0
+        v0_one_ring = self.one_ring(h_index)
+        return [self.half_edges[he_idx].vertex_indices[1] for he_idx in v0_one_ring]
     
+    ### POSITION RING METHODS ###
+    def edge_ring(self, h_index:int):
+        # for h_index one_ring edges, returns a list of their vertices (instead of indices)
+        # i.e. a list of  np.array (2,3) float64
+        v0_one_ring = self.one_ring(h_index) # assume h_index is a half-edge with source vertex v0
+        return [self.get_vertices_by_edge(h_index) for h_index in v0_one_ring]
+    
+    def vertex_ring(self, h_index:int):
+        # for h_index edge ring, returns a list of the target vertices positions,
+        # i.e. a list of (3,) float64
+        v0_edge_ring = self.edge_ring(h_index) # list of (2,3) float64, assume h_index is a half-edge with source vertex v0
+        return [edge[1] for edge in v0_edge_ring]
+    
+    def triangle_ring(self, h_index:int):
+        # for h_index one_ring edges, returns their triangles (instead of indices)
+        # i.e. a list of  np.array (3,3) float64
+        v0_one_ring = self.one_ring(h_index) # assume h_index is a half-edge with source vertex v0
+        return [self.get_triangle_vertices_by_edge(h_index) for h_index in v0_one_ring]
+    
+    def normal_ring(self, h_index:int, normalize:bool=True):
+        # for h_index triangle_ring, returns their triangles normals
+        # i.e. a list of (3,) float64
+        v0_triangle_ring = self.triangle_ring(h_index) # list of (3,3) float64, assume h_index is a half-edge with source vertex v0
+        return [get_normal(triangle, normalize=normalize) for triangle in v0_triangle_ring]
+    
+    def gravity_ring(self, h_index:int):
+        vertex_ring = [] # list of (n,3)
+        weighted_normal_ring = [] # list (n,3), each normal of triangle weighted by twice triangle area
+        v0_one_ring = self.one_ring(h_index) 
+        for h_idx in v0_one_ring:
+            edge = self.get_vertices_by_edge(h_idx)
+            vertex_ring.append(edge[1])
+            weighted_normal_ring.append(self.normal(h_idx, normalize=False))
+            
+        return vertex_ring, weighted_normal_ring
+        
+    
+    def compactness_ring(self, h_index:int):
+        # for h_index triangle ring, how much each triangle is close to an equilateral triangle
+        # i.e. a list of float64
+        v0_triangle_ring = self.triangle_ring(h_index)
+        return [get_compactness(triangle) for triangle in v0_triangle_ring]
+
     ############ half-edge modifying operations ############
     
     def edge_split(self, h0_index:int):
-        h0_twin_index = self.get_twin_index(h0_index)
+        h0_twin_index = self.half_edges[h0_index].twin
+        
         is_h0_bdry = self.half_edges[h0_index].face == -1 or self.half_edges[h0_twin_index].face == -1
-        assert not is_h0_bdry, f"edge_split({h0_index}) called but is boundary"
+        if is_h0_bdry:
+            return self.edge_split_boundary(h0_index)
+        # assert not is_h0_bdry, f"edge_split({h0_index}) called but is boundary" # TODO
             
 
         E = self.num_half_edges()
         T = self.num_faces()
         V = self.num_vertices()
 
-        # get data
-
+        # half edges indices
         h1_index = self.get_next_index(h0_index)
         h2_index = self.get_next_index(h1_index)
         h3_index = self.get_twin_index(h0_index)
 
         h4_index = self.get_next_index(h3_index)
         h5_index = self.get_next_index(h4_index)
-
+        # triangles indices
         t0_index = self.get_face(h0_index)
         t1_index = self.get_face(h3_index)
 
-        v0_index, v1_index = self.get_vertex_indices(h4_index)
-        v2_index, v3_index = self.get_vertex_indices(h1_index)
-
         # create new half edges indices
-
         h6_index = E+0
         h7_index = E+1
         h8_index = E+2
@@ -282,26 +423,27 @@ class HalfEdgeTriMesh:
         h13_index = E+7
 
         # create new triangles indices
-
         t2_index = T+0
         t3_index = T+1
         t4_index = T+2
         t5_index = T+3
 
-        # create new vertex index
-
+        # create new vertex
+        v0_index, v1_index = self.get_vertex_indices(h4_index)
+        v2_index, v3_index = self.get_vertex_indices(h1_index)
         v4_index = V+0
-
-        # create new half edges
+        # create new vertex
+        vertices = self.get_vertices_by_indices([v0_index, v2_index])
+        v4 = vertices.mean(axis=0)
         
-
+        # create new half edges
         h6 = self.create_half_edge(
             next=h7_index,
             face=t2_index,
             twin=h8_index,
             vertex_indices=[v0_index, v4_index],
             source_bdry = self.half_edges[h0_index].source_bdry,
-            target_bdry = self.half_edges[h0_index].target_bdry
+            target_bdry = False
         )
 
         h7 = self.create_half_edge(
@@ -309,7 +451,7 @@ class HalfEdgeTriMesh:
             face=t2_index,
             twin=h12_index,
             vertex_indices=[v4_index, v3_index],
-            source_bdry = is_h0_bdry,
+            source_bdry = False, # actually =is_h0_bdry, but then will call edge_split_boundary
             target_bdry = self.half_edges[h1_index].target_bdry
         )
 
@@ -318,7 +460,7 @@ class HalfEdgeTriMesh:
             face=t3_index,
             twin=h6_index,
             vertex_indices=[v4_index, v0_index],
-            source_bdry = is_h0_bdry,
+            source_bdry = False, # actually =is_h0_bdry, but then will call edge_split_boundary
             target_bdry = self.half_edges[h0_index].source_bdry
         )
 
@@ -328,7 +470,7 @@ class HalfEdgeTriMesh:
             twin=h10_index,
             vertex_indices=[v1_index, v4_index],
             source_bdry = self.half_edges[h4_index].target_bdry,
-            target_bdry = is_h0_bdry,
+            target_bdry = False, # actually =is_h0_bdry, but then will call edge_split_boundary
         )
 
         h10 = self.create_half_edge(
@@ -336,7 +478,7 @@ class HalfEdgeTriMesh:
             face=t4_index,
             twin=h9_index,
             vertex_indices=[v4_index, v1_index],
-            source_bdry = is_h0_bdry,
+            source_bdry = False, # actually =is_h0_bdry, but then will call edge_split_boundary
             target_bdry = self.half_edges[h4_index].target_bdry,
         )
 
@@ -346,7 +488,7 @@ class HalfEdgeTriMesh:
             twin=h13_index,
             vertex_indices=[v2_index, v4_index],
             source_bdry = self.half_edges[h3_index].source_bdry,
-            target_bdry = is_h0_bdry,
+            target_bdry = False, # actually =is_h0_bdry, but then will call edge_split_boundary
         )
 
         h12 = self.create_half_edge(
@@ -355,7 +497,7 @@ class HalfEdgeTriMesh:
             twin=h7_index,
             vertex_indices=[v3_index, v4_index],
             source_bdry = self.half_edges[h1_index].target_bdry,
-            target_bdry = is_h0_bdry,
+            target_bdry = False, # actually =is_h0_bdry, but then will call edge_split_boundary
         )
 
         h13 = self.create_half_edge(
@@ -363,7 +505,7 @@ class HalfEdgeTriMesh:
             face=t5_index,
             twin=h11_index,
             vertex_indices=[v4_index, v2_index],
-            source_bdry = is_h0_bdry,
+            source_bdry = False, # actually =is_h0_bdry, but then will call edge_split_boundary
             target_bdry = self.half_edges[h0_index].target_bdry,
         )
 
@@ -374,9 +516,7 @@ class HalfEdgeTriMesh:
         t4 = np.array([v4_index, v1_index, v2_index])
         t5 = np.array([v4_index, v2_index, v3_index])
 
-        # create new vertex
-        vertices = self.get_vertices_by_indices([v0_index, v2_index])
-        v4 = vertices.mean(axis=0)
+        
 
         # update half edges
         self.update_half_edge(
@@ -549,9 +689,12 @@ class HalfEdgeTriMesh:
 
     def edge_flip(self, h0_index:int):
         he0 = self.half_edges[h0_index]
+        if he0.target_bdry and not he0.source_bdry: # preference
+            return self.edge_flip(h0_index=he0.twin)
         he0_twin = self.half_edges[he0.twin]
         assert (he0.face != -1 and he0_twin.face != -1), f"edge_flip({he0}) called but has a boundary"
         # get data
+        
         h1_index = self.get_next_index(h0_index)
         h2_index = self.get_next_index(h1_index)
         h3_index = self.get_twin_index(h0_index)
@@ -585,6 +728,7 @@ class HalfEdgeTriMesh:
         self.replace_triangle_by_index(t0_index, np.array([v1_index, v2_index, v3_index]))
         self.replace_triangle_by_index(t1_index, np.array([v0_index, v1_index, v3_index]))
     
+    
     def edge_collapse(self, h0_index: int) -> list:    
         he0 = self.half_edges[h0_index]
         assert not (he0.source_bdry and he0.target_bdry), f"edge_collapse({he0}) called but has both source and target vertices on boundary"
@@ -612,20 +756,23 @@ class HalfEdgeTriMesh:
         # updates 
         is_v0_bdry = he0.source_bdry
 
-        v1_ring = self.one_ring(h3_index) # list of h_edges that have v1 as source
-        p_ring = []
+        v1_one_ring = self.one_ring(h3_index) # list of h_edges that have v1 as source
+        p_ring = [] # all half-edges that have v1 as source, except h1 and h3
 
-        for h_index in v1_ring: 
+        for h_index in v1_one_ring: 
             _, v_index = self.get_vertex_indices(h_index)
             if v_index in (v0_index, v2_index): # if h1 or h3
                 continue
 
-            # Update triangles - in each triangle in v1_ring (except t0,t1) replace v1 by v0 
+            # Update triangles - in each triangle in v1_one_ring (except t0,t1) replace v1 by v0 
             self.update_triangle_by_vertex_indices(h_index, v0_index, v1_index)
 
             p_ring.append(h_index) 
+            
+            if v_index == v3_index: # skip over h8, because we don't wish to update h5, to keep it for revert
+                continue
 
-            # Update halfedges - for each he in v1_ring, except (h1,h3), update its and its twin vertices
+            # Update halfedges - for each he in v1_one_ring, except (h1,h3), update its and its twin vertices
             self.update_half_edge(h_index, vertex_indices=[v0_index, v_index], source_bdry=is_v0_bdry)
 
             th_index = self.get_twin_index(h_index)
@@ -640,7 +787,7 @@ class HalfEdgeTriMesh:
         self.update_half_edge(h7_index,twin=h8_index)
 
         # all updates beside twin are redundant, happen in loop, but for clarity
-        self.update_half_edge(h8_index,twin=h7_index,vertex_indices=[v0_index, v3_index], source_bdry=is_v0_bdry)
+        self.update_half_edge(h8_index, twin=h7_index, vertex_indices=[v0_index, v3_index], source_bdry=is_v0_bdry)
 
         # save unreferenced half edges
         self.unreferenced_half_edges.extend([h0_index, h1_index, h2_index, h3_index, h4_index, h5_index])
@@ -652,6 +799,57 @@ class HalfEdgeTriMesh:
         return p_ring 
     
     
+    def revert_edge_collapse(self, p_ring:list):
+        # p_ring contains all half edges that have v1 as source, except h1 and h3
+        # get data 
+        h5_index = self.unreferenced_half_edges[-1]
+        h4_index = self.unreferenced_half_edges[-2]
+        h2_index = self.unreferenced_half_edges[-4]
+        h1_index = self.unreferenced_half_edges[-5]
+
+        h6_index = self.get_twin_index(h2_index)
+        h7_index = self.get_twin_index(h4_index)
+        h8_index = self.get_twin_index(h5_index)
+        h9_index = self.get_twin_index(h1_index)
+
+        v0_index, v3_index = self.get_vertex_indices(h4_index)
+        v1_index, v2_index = self.get_vertex_indices(h1_index)
+        is_v1_bdry = self.half_edges[h1_index].source_bdry
+        # updates 
+
+        for h_index in p_ring:
+            _, v_index = self.get_vertex_indices(h_index)
+            # update triangle 
+            self.update_triangle_by_vertex_indices(h_index, v1_index, v0_index)
+            
+            if v_index == v3_index: # skip over h8, because its twin is h7 currently
+                continue
+
+            # update half edge vertices
+            self.update_half_edge(h_index, vertex_indices=[v1_index, v_index])
+
+            th_index =self.get_twin_index(h_index)
+            self.update_half_edge(th_index, vertex_indices=[v_index, v1_index], target_bdry=is_v1_bdry)
+
+        # update half edge twins
+
+        self.update_half_edge(h6_index,twin=h2_index)
+
+        self.update_half_edge(h9_index, twin=h1_index, vertex_indices=[v2_index, v1_index], target_bdry=is_v1_bdry)
+
+        self.update_half_edge(h7_index, twin=h4_index)
+
+        self.update_half_edge(h8_index, twin=h5_index, vertex_indices=[v1_index, v3_index], source_bdry=is_v1_bdry)
+
+        # remove unreferenced half edges
+        self.unreferenced_half_edges = self.unreferenced_half_edges[:-6]
+
+        # remove unreferenced triangles
+        self.unreferenced_triangles = self.unreferenced_triangles[:-2]
+
+        # remove unreferenced vertices
+        self.unreferenced_vertices.pop()
+
 # if __name__=="__main__":
 #     from utils_load import *
 #     from utils_vis import *

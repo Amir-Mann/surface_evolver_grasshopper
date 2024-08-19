@@ -4,14 +4,14 @@ def split_long_edges(he_trimesh: HalfEdgeTriMesh, threshold:int):
     for h_idx in he_trimesh: # iterates only once over each half edge
         if he_trimesh.is_he_boundary(h_idx):
             continue
-        edge_length = he_trimesh.get_edge_length(h_idx)
+        edge_length = he_trimesh.edge_len(h_idx)
         if edge_length > threshold:
             he_trimesh.edge_split(h_idx)
 
 def collapse_short_edges(he_trimesh: HalfEdgeTriMesh, threshold:int):
     for h_idx in he_trimesh: # iterates only once over each half edge
         if he_trimesh.is_he_collapsible(h_idx):
-            edge_length = he_trimesh.get_edge_length(h_idx)
+            edge_length = he_trimesh.edge_len(h_idx)
             if edge_length < threshold:
                 he_trimesh.edge_collapse(h_idx)
 
@@ -30,7 +30,7 @@ def remesh(he_trimesh: HalfEdgeTriMesh, l:int=0):
     # also
     # https://stackoverflow.com/questions/27049163/mesh-simplification-edge-collapse-conditions
     for h_idx in he_trimesh:
-        edge_length = he_trimesh.get_edge_length(h_idx)
+        edge_length = he_trimesh.edge_len(h_idx)
         if edge_length < (4*l/5):
             he_trimesh.edge_collapse(h_idx)
     
