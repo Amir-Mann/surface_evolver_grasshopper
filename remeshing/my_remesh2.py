@@ -1,7 +1,7 @@
 import numpy as np 
 from HalfEdge.half_edge import HalfEdgeTriMesh
 from HalfEdge.utils_math import angle, is_collinear
-from HalfEdge.utils_he import std_deviation_edge_len, std_deviation_face_area
+import HalfEdge.utils_he as utils_he
 import threading
 
 class IsotropicRemesher:
@@ -246,24 +246,26 @@ class IsotropicRemesher:
 
     def isotropic_remeshing(self, L:float, num_iters:int=20, explicit:bool=False, foldover:float=0, sliver:bool=False):
         L_low, L_high = 4/5.*L, 4/3.*L
-        print(f'L low = {L_low:.2f} L target = {L:.2f} L high = {L_high:.2f}, foldover = {foldover:.2f}, sliver = {sliver}')
-
         for iter in range(num_iters): 
 
-            print(10*'=' + f' ITER {iter+1}/{num_iters} ' + 10*'=')
+            # print(10*'=' + f' ITER {iter+1}/{num_iters} ' + 10*'=')
 
             s = self.split_long_edges(L_high)
-            print(f'split long edges ({s})')
+            # print(f'split long edges ({s})')
 
             c = self.collapse_short_edges(L_low, L_high, explicit, foldover)
-            print(f'collapse short edges ({c})')
+            # print(f'collapse short edges ({c})')
             
             f = self.equalize_valences(sliver, foldover)
-            print(f'flip edges ({f})')
+            # print(f'flip edges ({f})')
 
             # new_vertices = self.vertex_relocation(explicit)
             self.vertex_relocation(explicit)
-            print(f'tangential smoothing')
+            # print(f'tangential smoothing')
+            
+            std_edge_len = utils_he.std_deviation_edge_len(he_trimesh)
+            std_area, relative_mean_area_error = utils_he.face_area_stats(he_trimesh)
+            print(f"{iter+1}/{num_iters}, std. deviation edge len: {std_edge_len:.2f}, std. deviation face area: {std_area:.2f}, relative mean area error: {relative_mean_area_error:.2f}")
 
     def tangential_smoothing(self, h_index, lambda_:float=0.1):
         he0 = self.model.half_edges[h_index]
@@ -300,22 +302,26 @@ class IsotropicRemesher:
 
 
 if __name__=="__main__":
-    he_trimesh = HalfEdgeTriMesh.from_model_path("sample2.json")
-    # he_trimesh = HalfEdgeTriMesh.from_model_path("hex_grid_uv_03_ccw.obj")
-    std_edge_len_before = std_deviation_edge_len(he_trimesh)
-    std_face_area_before = std_deviation_face_area(he_trimesh)
-    he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
-    # he_trimesh.visualize()
-    L = he_trimesh.get_average_edge_length()
+    # model_name = "hex_grid_uv_03_ccw.obj"
+    # model_name = "sample2.json"
+    model_name = "iphi_bad10k.off"
+    he_trimesh = HalfEdgeTriMesh.from_model_path(model_name)
+    # he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
     
+    L = 0.9*he_trimesh.get_average_edge_length()
+    L_low, L_high = 4/5.*L, 4/3.*L
+    
+    sliver = True
+    explicit = True
+    foldover = np.pi/9
+    num_iters=5
+    run_stats= f'L low = {L_low:.2f} L target = {L:.2f} L high = {L_high:.2f}, explicit={explicit}, foldover = {foldover:.2f}, sliver = {sliver}'
+    
+    utils_he.save_stats(he_trimesh, prefix="before", rewrite=True, extra=run_stats)
     remesher = IsotropicRemesher(he_trimesh)
-    remesher.isotropic_remeshing(L=0.90*L, num_iters=7, explicit=True, foldover=np.pi/9, sliver=True)
-    std_edge_len_after = std_deviation_edge_len(he_trimesh)
-    std_face_area_after = std_deviation_face_area(he_trimesh)
-    diff_edge_len = std_edge_len_after - std_edge_len_before 
-    diff_face_area = std_face_area_after - std_face_area_before
-    # print difference
-    print(f"Δ std. deviation edge len: {diff_edge_len:.2f}, Δ std. deviation face area: {diff_face_area:.2f}")
-    he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
-    # remesher.visualize()
+    remesher.isotropic_remeshing(L=L, num_iters=num_iters, explicit=explicit, foldover=foldover, sliver=sliver)
+    utils_he.save_stats(he_trimesh, prefix=f"after {num_iters} iters", rewrite=False)
     
+    # he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
+    # remesher.visualize()
+    remesher.model.save_to_obj()

@@ -1,7 +1,7 @@
 from typing import List, Union
 import numpy as np
 import numpy.typing as npt
-from HalfEdge.utils_load import get_np_V_F
+import HalfEdge.utils_load as utils_load
 from HalfEdge.utils_vis import vis_he_trimesh
 from HalfEdge.utils_math import get_normal, get_compactness, get_area
 class HalfEdge:
@@ -32,12 +32,13 @@ class HalfEdgeTriMesh:
     ############ SETUP ############
     @classmethod
     def from_model_path(cls, model_path: str):
-        V,F = get_np_V_F(model_path)
-        return cls(V,F)
+        V,F, model_name = utils_load.get_np_V_F(model_path)
+        return cls(V,F, model_name=model_name)
     
     def __init__(self,
                  V : npt.NDArray[np.float64], # shape (#vertices,3)
-                 F : npt.NDArray[np.int32]): # shape (#faces,3)
+                 F : npt.NDArray[np.int32], # shape (#faces,3)
+                 model_name: str = "stam"):
         half_edges_d = dict()
         self.half_edges = []
         self.V = V # np (#verts,3) float64
@@ -46,6 +47,8 @@ class HalfEdgeTriMesh:
         self.unreferenced_vertices = []
         self.unreferenced_faces = []
         self.unreferenced_half_edges = []
+        self.model_name = model_name
+        self.last_v0_pos = np.array([0,0,0])
         
         for face_idx, verts in enumerate(F):
             vi_idx = verts[0]
@@ -128,6 +131,9 @@ class HalfEdgeTriMesh:
         if source_bdry is not None: he.source_bdry = source_bdry
         if target_bdry is not None: he.target_bdry = target_bdry
         
+    def save_to_obj(self):
+        utils_load.save_to_obj(self)    
+
     ############ GETTERS ############
     
     def is_he_boundary(self, h_index):
@@ -709,6 +715,10 @@ class HalfEdgeTriMesh:
 
         # updates 
         is_v0_bdry = he0.source_bdry
+        # update v0_pos
+        if not he0.source_bdry:
+            self.V[v0_index] = (self.V[v0_index] + self.V[v1_index])/2
+        self.last_v0_pos = self.V[v0_index]
 
         v1_one_ring = self.one_ring(h3_index) # list of h_edges that have v1 as source
         p_ring = [] # all half-edges that have v1 as source, except h1 and h3
@@ -749,6 +759,7 @@ class HalfEdgeTriMesh:
         self.unreferenced_faces.extend([t0_index, t1_index])
         # save unreferenced vertex
         self.unreferenced_vertices.extend([v1_index])
+    
 
         return p_ring 
     
@@ -768,7 +779,9 @@ class HalfEdgeTriMesh:
         v0_index, v3_index = self.half_edges[h4_index].vertex_indices
         v1_index, v2_index = self.half_edges[h1_index].vertex_indices
         is_v1_bdry = self.half_edges[h1_index].source_bdry
-        # updates 
+        ### updates  ###
+        # update v0_pos
+        self.V[v0_index] = self.last_v0_pos
 
         for h_index in p_ring:
             _, v_index = self.half_edges[h_index].vertex_indices
