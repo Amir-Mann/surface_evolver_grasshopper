@@ -160,15 +160,12 @@ class HalfEdgeTriMesh:
         vertices_t = self.get_vertices_by_indices(indices)
         return np.mean(vertices_t, axis=0)
     
-    def get_end_vertex_index(self, h_index:int):
-        return self.half_edges[h_index].vertex_indices[1]
-    
     def get_start_vertex_by_edge(self, h_index:int):
         v0_index = self.half_edges[h_index].vertex_indices[0]
         return self.get_vertices_by_indices(v0_index)
     
     def get_end_vertex_by_edge(self, h_index:int):
-        v1_index = self.get_end_vertex_index(h_index)
+        v1_index = self.half_edges[h_index].vertex_indices[1]
         return self.get_vertices_by_indices(v1_index)
     
     def get_vertices_by_edge(self, h_index):

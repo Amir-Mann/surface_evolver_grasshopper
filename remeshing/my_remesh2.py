@@ -108,7 +108,7 @@ class IsotropicRemesher:
                 continue
             
             if explicit:
-                v1_index = self.model.get_end_vertex_index(h0_index)
+                v1_index = self.half_edges[h0_index].vertex_indices[1]
                 if  v1_index < self.model.n_vertices:
                     continue
 
