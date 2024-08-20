@@ -1,3 +1,4 @@
+import os
 from typing import List, Union
 import numpy as np
 import numpy.typing as npt
@@ -131,8 +132,10 @@ class HalfEdgeTriMesh:
         if source_bdry is not None: he.source_bdry = source_bdry
         if target_bdry is not None: he.target_bdry = target_bdry
         
-    def save_to_obj(self):
-        utils_load.save_to_obj(self)    
+    def save_to_obj(self, open_in_meshlab=False):
+        obj_path = utils_load.save_to_obj(self)
+        if open_in_meshlab:
+            os.system(f"meshlab {obj_path} > /dev/null 2>&1")
 
     ############ GETTERS ############
     
@@ -231,6 +234,12 @@ class HalfEdgeTriMesh:
             num_edges += 1
         return total_length/num_edges
     
+    def get_percentile_edge_length(self, percentile:float):
+        lengths = []
+        for edge_index in self:
+            lengths.append(self.edge_len(edge_index))
+        return np.percentile(lengths, percentile)
+    
     def get_triangle_vertices_by_edge(self, h_index:int):
         # returns (3,3) float64 of the triangle vertices that the half-edge belongs to
         f_index = self.half_edges[h_index].face
@@ -245,15 +254,14 @@ class HalfEdgeTriMesh:
     
     def valence(self, h_index:int):
         # return number of edges that leave source vertex
-        # todo
-        h = self.half_edges[h_index]
+        h = self.half_edges[h_index]  # TODO debug
         v0_one_ring = list(self.one_ring(h_index))
         return len(v0_one_ring)
     
     def adjacent_half_edges(self, h_index:int):
         nh_index = self.half_edges[h_index].next # h1
         nnh_index = self.half_edges[nh_index].next # h2
-        th_index = self.half_edges[h_index].next # h3
+        th_index = self.half_edges[h_index].twin # h3
         nth_index = self.half_edges[th_index].next # h4
         nnth_index = self.half_edges[nth_index].next # h5
         return nh_index, nnh_index, nth_index, nnth_index # h1, h2, h4, h5
@@ -792,7 +800,7 @@ class HalfEdgeTriMesh:
                 continue
 
             # update half edge vertices
-            self.update_half_edge(h_index, vertex_indices=[v1_index, v_index])
+            self.update_half_edge(h_index, vertex_indices=[v1_index, v_index], source_bdry=is_v1_bdry)
 
             th_index =self.half_edges[h_index].twin
             self.update_half_edge(th_index, vertex_indices=[v_index, v1_index], target_bdry=is_v1_bdry)

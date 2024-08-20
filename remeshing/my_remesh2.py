@@ -1,3 +1,4 @@
+import os
 import numpy as np 
 from HalfEdge.half_edge import HalfEdgeTriMesh
 from HalfEdge.utils_math import angle, is_collinear
@@ -32,14 +33,16 @@ class IsotropicRemesher:
     def has_collinear_edges(self, h0_index: int):
         _, h2_index, _, h5_index = self.model.adjacent_half_edges(h0_index) # h1, h2, h4, h5
 
-        v3_index, v0_index = self.half_edges[h2_index].vertex_indices
-        v1_index, v2_index = self.half_edges[h5_index].vertex_indices
+        v2_index, v0_index = self.half_edges[h2_index].vertex_indices
+        v3_index, v1_index = self.half_edges[h5_index].vertex_indices
 
         vertices = self.V[[v1_index, v2_index, v3_index]]
-        if is_collinear(vertices): return True
-        
-        vertices = self.V[[v0_index, v1_index, v3_index]]
-        if is_collinear(vertices): return True
+        if is_collinear(vertices): 
+            return True
+        he0 = self.half_edges[h0_index] # todo debug
+        vertices2 = self.V[[v0_index, v2_index, v3_index]]
+        if is_collinear(vertices2): 
+            return True
 
         return False
     
@@ -65,13 +68,14 @@ class IsotropicRemesher:
         return len(v0_ring.intersection(v1_ring)) == 2
 
     def has_flip_connectivity(self, h0_index: int):
-
-        if self.model.valence(h0_index) == 3:
+        h0_valence = self.model.valence(h0_index)
+        if  h0_valence == 3:
             return False
         
         h3_index = self.half_edges[h0_index].twin
+        h3_valence = self.model.valence(h3_index)
 
-        if self.model.valence(h3_index) == 3:
+        if h3_valence == 3:
             return False
 
         return True
@@ -96,7 +100,7 @@ class IsotropicRemesher:
 
         return n 
 
-    def collapse_short_edges(self, L_low, L_high, explicit:bool=False, foldover:float=0):
+    def collapse_short_edges(self, L_low, L_high, foldover:float=0):
         n = 0
         E = len(self.model.half_edges)
         skip = []
@@ -114,13 +118,9 @@ class IsotropicRemesher:
 
             if h0_index in self.model.unreferenced_half_edges:
                 continue
-            
-            if explicit:
-                v1_index = self.half_edges[h0_index].vertex_indices[1]
-                if  v1_index < self.model.n_vertices:
-                    continue
+    
 
-            h0_edge_len = self.model.edge_len(h0_index) # TODO remove
+            h0_edge_len = self.model.edge_len(h0_index) # TODO debug
             if self.model.edge_len(h0_index) >= L_low:
                 continue
 
@@ -137,7 +137,7 @@ class IsotropicRemesher:
             he0_index = self.model.half_edges[h0_index]
             if he0_index.source_bdry and he0_index.target_bdry:
                 continue
-            p_ring = self.model.edge_collapse(h0_index) # TODO check if he81 is prevented by foldover
+            p_ring = self.model.edge_collapse(h0_index) 
 
             # Compute normals after collapse 
             if foldover > 0:
@@ -170,6 +170,9 @@ class IsotropicRemesher:
                 continue
             
             he0 = self.model.half_edges[h0_index]
+            # if boundary edge
+            if he0.face==-1 or self.model.half_edges[h3_index].face==-1:
+                continue
             if not self.has_flip_connectivity(h0_index):
                 continue 
 
@@ -216,10 +219,16 @@ class IsotropicRemesher:
 
         return n
 
-    def vertex_relocation(self, explicit:bool=False):
+    def vertex_relocation(self, iter: int, num_iters: int):
         E = len(self.model.half_edges)
         skip = []
-        # new_vertices = np.asarray(self.model.vertices).copy()
+        # lambda_ = 1.0 if iter < num_iters/2 else 0.75
+        lambda_ = 0.9
+        if iter > num_iters/3:
+            lambda_ /= 2
+        if iter > 2*num_iters/3:
+            lambda_ /= 2
+        
         for h_index in range(E):
 
             if h_index in self.model.unreferenced_half_edges:
@@ -233,41 +242,36 @@ class IsotropicRemesher:
             if v_index in self.model.unreferenced_vertices:
                 continue
 
-            if explicit:
-                if  v_index < self.model.n_vertices:
-                    continue
             
-            self.tangential_smoothing(h_index)
-            # new_vertices[v_index] = self.tangential_smoothing(h_index)
+            self.tangential_smoothing(h_index, lambda_)
             
             skip.append(v_index)
 
         # return new_vertices
 
-    def isotropic_remeshing(self, L:float, num_iters:int=20, explicit:bool=False, foldover:float=0, sliver:bool=False):
+    def isotropic_remeshing(self, L:float, num_iters:int=20, foldover:float=0, sliver:bool=False):
         L_low, L_high = 4/5.*L, 4/3.*L
         for iter in range(num_iters): 
 
-            # print(10*'=' + f' ITER {iter+1}/{num_iters} ' + 10*'=')
+            print(10*'=' + f' ITER {iter+1}/{num_iters} ' + 10*'=')
 
             s = self.split_long_edges(L_high)
-            # print(f'split long edges ({s})')
+            print(f'split long edges ({s})')
 
-            c = self.collapse_short_edges(L_low, L_high, explicit, foldover)
-            # print(f'collapse short edges ({c})')
+            c = self.collapse_short_edges(L_low, L_high, foldover)
+            print(f'collapse short edges ({c})')
             
             f = self.equalize_valences(sliver, foldover)
-            # print(f'flip edges ({f})')
+            print(f'flip edges ({f})')
 
-            # new_vertices = self.vertex_relocation(explicit)
-            self.vertex_relocation(explicit)
-            # print(f'tangential smoothing')
+            self.vertex_relocation(iter=iter, num_iters=num_iters)
+            print(f'tangential smoothing')
             
-            std_edge_len = utils_he.std_deviation_edge_len(he_trimesh)
-            std_area, relative_mean_area_error = utils_he.face_area_stats(he_trimesh)
-            print(f"{iter+1}/{num_iters}, std. deviation edge len: {std_edge_len:.2f}, std. deviation face area: {std_area:.2f}, relative mean area error: {relative_mean_area_error:.2f}")
+            # std_edge_len = utils_he.std_deviation_edge_len(he_trimesh)
+            # std_area, relative_mean_area_error = utils_he.face_area_stats(he_trimesh)
+            # print(f"{iter+1}/{num_iters}, std. deviation edge len: {std_edge_len:.2f}, std. deviation face area: {std_area:.2f}, relative mean area error: {relative_mean_area_error:.2f}")
 
-    def tangential_smoothing(self, h_index, lambda_:float=0.1):
+    def tangential_smoothing(self, h_index, lambda_:float):
         he0 = self.model.half_edges[h_index]
         if he0.source_bdry:
             return
@@ -305,23 +309,25 @@ if __name__=="__main__":
     # model_name = "hex_grid_uv_03_ccw.obj"
     # model_name = "sample2.json"
     model_name = "iphi_bad10k.off"
+    # model_name = "wolf_head.obj"
     he_trimesh = HalfEdgeTriMesh.from_model_path(model_name)
     # he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
-    
-    L = 0.9*he_trimesh.get_average_edge_length()
+    # L = he_trimesh.get_percentile_edge_length(0.1)
+    L = he_trimesh.get_average_edge_length()
     L_low, L_high = 4/5.*L, 4/3.*L
     
-    sliver = True
-    explicit = True
-    foldover = np.pi/9
-    num_iters=5
-    run_stats= f'L low = {L_low:.2f} L target = {L:.2f} L high = {L_high:.2f}, explicit={explicit}, foldover = {foldover:.2f}, sliver = {sliver}'
+    sliver = False
+    foldover=0
+    num_iters=6
+    run_stats= f'L low = {L_low:.2f} L target = {L:.2f} L high = {L_high:.2f}, foldover = {foldover:.2f}, sliver = {sliver}'
     
     utils_he.save_stats(he_trimesh, prefix="before", rewrite=True, extra=run_stats)
     remesher = IsotropicRemesher(he_trimesh)
-    remesher.isotropic_remeshing(L=L, num_iters=num_iters, explicit=explicit, foldover=foldover, sliver=sliver)
+    remesher.isotropic_remeshing(L=L, num_iters=num_iters, foldover=foldover, sliver=sliver)
     utils_he.save_stats(he_trimesh, prefix=f"after {num_iters} iters", rewrite=False)
     
     # he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
     # remesher.visualize()
-    remesher.model.save_to_obj()
+    remesher.model.save_to_obj(open_in_meshlab=True)
+    # os.system('play -nq -t alsa synth 0.7 sine 440')
+    

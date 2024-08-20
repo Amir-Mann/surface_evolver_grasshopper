@@ -104,3 +104,4 @@ def save_to_obj(he_trimesh):
         for face in referenced_faces:
             obj_file.write(f"f {face[0] + 1} {face[1] + 1} {face[2] + 1}\n")
     print(f'saved to {out_path}')
+    return out_path
