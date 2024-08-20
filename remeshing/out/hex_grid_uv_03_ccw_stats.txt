@@ -1,5 +1,5 @@
-L low = 0.25 L target = 0.32 L high = 0.42, foldover = 0.52, sliver = False
+L low = 0.28 L target = 0.35 L high = 0.47, foldover = 0.00, sliver = False
 before
 std. deviation edge len: 0.12, std. deviation face area: 0.04, relative mean area error: 0.39
 after 20 iters
-std. deviation edge len: 0.08, std. deviation face area: 0.03, relative mean area error: 0.31
+std. deviation edge len: 0.08, std. deviation face area: 0.03, relative mean area error: 0.29

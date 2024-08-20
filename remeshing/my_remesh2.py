@@ -224,10 +224,10 @@ class IsotropicRemesher:
         skip = []
         # lambda_ = 1.0 if iter < num_iters/2 else 0.75
         lambda_ = 0.9
-        if iter > num_iters/3:
+        if iter > num_iters/2:
             lambda_ /= 2
-        if iter > 2*num_iters/3:
-            lambda_ /= 2
+        # if iter > 2*num_iters/3:
+        #     lambda_ /= 2
         
         for h_index in range(E):
 
@@ -286,11 +286,16 @@ class IsotropicRemesher:
         update = lambda_ * (centroid - v0_pos)
         # normal as average of face normals
         normal = np.mean(weighted_normal_ring, axis=0)
-        normal /= np.linalg.norm(normal)
+        normal_norm = np.linalg.norm(normal)
+        if normal_norm == 0:
+            return
+        normal /= normal_norm
         update = update - np.dot(update, normal) * normal
 
         new_v0_pos = v0_pos + update
         self.model.V[v0_idx] = new_v0_pos
+        pass
+        
 
     def compactness_deviation(self, h_index:int):
         return sum([1.-np.mean(list(self.model.compactness_ring(i))) for i in self.model.adjacent_half_edges(h_index)])
@@ -308,17 +313,17 @@ class IsotropicRemesher:
 if __name__=="__main__":
     # model_name = "hex_grid_uv_03_ccw.obj"
     # model_name = "sample2.json"
-    model_name = "iphi_bad10k.off"
-    # model_name = "wolf_head.obj"
+    # model_name = "iphi_bad10k.off"
+    model_name = "wolf_head.obj"
     he_trimesh = HalfEdgeTriMesh.from_model_path(model_name)
     # he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
     # L = he_trimesh.get_percentile_edge_length(0.1)
-    L = he_trimesh.get_average_edge_length()
+    L = 0.9 *he_trimesh.get_average_edge_length()
     L_low, L_high = 4/5.*L, 4/3.*L
     
-    sliver = False
-    foldover=0
-    num_iters=6
+    sliver = True
+    foldover=np.pi/9
+    num_iters=20
     run_stats= f'L low = {L_low:.2f} L target = {L:.2f} L high = {L_high:.2f}, foldover = {foldover:.2f}, sliver = {sliver}'
     
     utils_he.save_stats(he_trimesh, prefix="before", rewrite=True, extra=run_stats)

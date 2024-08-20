@@ -10,16 +10,18 @@ def get_np_V_F(filename):
     # V (n,3) float64,
     # F (m,3) int32
     model_name = filename.split('.')[0]
+    filepath = os.path.join(SAMPLES_DIR, filename)
     if filename.endswith('.json'):
-        v,f = get_np_V_F_from_json(filename)
+        V,F = get_np_V_F_from_json(filepath)
     elif filename.endswith('.obj'):
-        v, f = get_np_V_F_from_obj(filename)
+        V,F = get_np_V_F_from_obj(filepath)
     elif filename.endswith('.off'):
-        v, f = get_np_V_F_from_off(filename)
-    return v, f, model_name
+        V,F = get_np_V_F_from_off(filepath)
+    else:
+        raise ValueError('Invalid file format')
+    return V,F, model_name
 
-def get_np_V_F_from_json(json_filename):
-    json_path = os.path.join(SAMPLES_DIR, json_filename)
+def get_np_V_F_from_json(json_path):
     with open(json_path, 'r') as file:
         data = json.load(file)
     vertices = np.array(data['verts'], dtype=np.double) # shape (#vertices, 3)
@@ -27,8 +29,7 @@ def get_np_V_F_from_json(json_filename):
     
     return vertices, triangles
 
-def get_np_V_F_from_obj(obj_filename):
-    obj_path = os.path.join(SAMPLES_DIR, obj_filename)
+def get_np_V_F_from_obj(obj_path):
     vertices, faces = [], []
     with open(obj_path, 'r') as file:
         for line in file:
@@ -46,13 +47,12 @@ def get_np_V_F_from_obj(obj_filename):
     faces_np = np.array(faces, dtype=np.int32) #(f,3)
     return vertices_np, faces_np
 
-def get_np_V_F_from_off(off_filename):
+def get_np_V_F_from_off(off_path):
     def strip_comments(line):
         # Remove any inline comments starting with # or //
         line = line.split('#')[0]
         line = line.split('//')[0]
         return line.strip()
-    off_path = os.path.join(SAMPLES_DIR, off_filename)
     with open(off_path, 'r') as file:
         # Read the first line (OFF header)
         header = file.readline().strip()
