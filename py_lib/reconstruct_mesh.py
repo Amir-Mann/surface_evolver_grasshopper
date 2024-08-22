@@ -36,7 +36,7 @@ def create_mesh(file_string):
     verts = []
     verts_id_to_index = {}
     edges_to_verts = {}
-    faces = []
+    fixed_faces = []
     full_faces = []
     mod = "add verts"
     for line in file_string.split("\n"):
@@ -61,29 +61,23 @@ def create_mesh(file_string):
                 break
             elif len(line) > 3:
                 items = get_line_items(line)
-                if "fixed" in items:
-                    edge1, edge2, edge3 = items[1:4]
-                    assert edges_to_verts[edge1][1] == edges_to_verts[edge2][0]
-                    assert edges_to_verts[edge2][1] == edges_to_verts[edge3][0]
-                    assert edges_to_verts[edge3][1] == edges_to_verts[edge1][0]
-                    full_faces.append((verts_id_to_index[edges_to_verts[edge1][0]],
-                                       verts_id_to_index[edges_to_verts[edge2][0]],
-                                       verts_id_to_index[edges_to_verts[edge3][0]]))
                 edge1, edge2, edge3 = items[1:4]
                 assert edges_to_verts[edge1][1] == edges_to_verts[edge2][0]
                 assert edges_to_verts[edge2][1] == edges_to_verts[edge3][0]
                 assert edges_to_verts[edge3][1] == edges_to_verts[edge1][0]
-                faces.append((verts_id_to_index[edges_to_verts[edge1][0]], 
-                              verts_id_to_index[edges_to_verts[edge2][0]], 
-                              verts_id_to_index[edges_to_verts[edge3][0]]))
                 full_faces.append((verts_id_to_index[edges_to_verts[edge1][0]],
-                                   verts_id_to_index[edges_to_verts[edge2][0]],
-                                   verts_id_to_index[edges_to_verts[edge3][0]]))
-
-    return (verts, faces, full_faces)
+                                    verts_id_to_index[edges_to_verts[edge2][0]],
+                                    verts_id_to_index[edges_to_verts[edge3][0]]))
+                    
+                if "fixed" in items:
+                    fixed_faces.append((verts_id_to_index[edges_to_verts[edge1][0]],
+                                       verts_id_to_index[edges_to_verts[edge2][0]],
+                                       verts_id_to_index[edges_to_verts[edge3][0]]))
+                
+    return (verts, full_faces, fixed_faces)
 
 
 def reconstruct_mesh(arguments, results_text):
-    verts, faces, full_faces = create_mesh(results_text)
+    verts, faces, fixed_faces = create_mesh(results_text)
     arguments['result_mesh']['verts'], arguments['result_mesh']['faces'] = verts, faces
-    arguments['result_fixed']['verts'], arguments['result_fixed']['faces'] = verts, full_faces
+    arguments['result_fixed']['verts'], arguments['result_fixed']['faces'] = verts, fixed_faces

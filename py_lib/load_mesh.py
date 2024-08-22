@@ -56,7 +56,7 @@ def get_mesh_data(mesh, holes):
             else:
                 edge_indices[edge] = edge_index
                 face_edges.append(edge_index)
-                edge_index += 1 
+                edge_index += 1
          
         
         faces.append(face_edges)
@@ -67,6 +67,7 @@ def get_mesh_data(mesh, holes):
         if fixed_edges[edge_indices[edge]] == 1:
             fixed_vertices[edge[0]] = 1
             fixed_vertices[edge[1]] = 1
+
 
 
     # Create fixed faces
@@ -110,12 +111,6 @@ def get_mesh_data(mesh, holes):
     for holes_mesh in holes:
         for i in range(holes_mesh.Faces.Count):
             face = holes_mesh.Faces[i]
-            print(holes_mesh.Vertices.Point3dAt(face.A))
-            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)])
-            print(holes_mesh.Vertices.Point3dAt(face.B))
-            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)])
-            print(vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)])
-
             v1 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.A)]
             v2 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.B)]
             v3 = vertex_indices[holes_mesh.Vertices.Point3dAt(face.C)]
@@ -153,7 +148,17 @@ def get_mesh_data(mesh, holes):
                 faces.remove(face_edges)
                 fixed_faces.append(face_edges)
 
-    return vertex_indices, fixed_vertices, edge_indices, fixed_edges, faces, fixed_faces
+    edge_length_sum_none_fixed = 0
+    edge_count_none_fixed = 0
+    for edge in edge_indices.keys():
+        if fixed_edges[edge_indices[edge]] != 1:
+            v1 = edge[0]
+            v2 = edge[1]
+            edge_length_sum_none_fixed += ((mesh.Vertices.Point3dAt(v1) - mesh.Vertices.Point3dAt(v2)).Length)
+            edge_count_none_fixed += 1
+    
+
+    return vertex_indices, fixed_vertices, edge_indices, fixed_edges, faces, fixed_faces, edge_length_sum_none_fixed/edge_count_none_fixed
 
 
 def parse_mesh(mesh, holes):
@@ -164,7 +169,7 @@ def parse_mesh(mesh, holes):
 
 
 def get_mesh_topology_for_fe(arguments):
-    vertices, fixed_vertices, edges, fixed_edges, faces, fixed_faces = parse_mesh(arguments["input_mesh"], arguments["input_boundary_conditions"])
+    vertices, fixed_vertices, edges, fixed_edges, faces, fixed_faces, edge_length_avg_none_fixed = parse_mesh(arguments["input_mesh"], arguments["input_boundary_conditions"])
     gemotry_text = ""
     # Write vertices
     gemotry_text += 'vertices\n'
@@ -187,9 +192,9 @@ def get_mesh_topology_for_fe(arguments):
             min_Z = v.Z
     for v, i in vertices.items():
         if fixed_vertices[i] == 0:
-            gemotry_text += f"{i+1} {v.X + max_X:.2f} {v.Y:.2f} {v.Z:.2f}\n"
+            gemotry_text += f"{i+1} {v.X + (max_X - min_X) * 1.1:.2f} {v.Y:.2f} {v.Z:.2f}\n"
         else:
-            gemotry_text += f"{i+1} {v.X + max_X:.2f} {v.Y:.2f} {v.Z:.2f} fixed\n"
+            gemotry_text += f"{i+1} {v.X + (max_X - min_X) * 1.1:.2f} {v.Y:.2f} {v.Z:.2f} fixed\n"
         
     # Write edges
     gemotry_text += '\nedges\n'
@@ -230,6 +235,6 @@ def get_mesh_topology_for_fe(arguments):
     gemotry_text += 'N\n'  # Set target volume to actual volume
     gemotry_text += 'set edge color 4 where fixed\n'
 
-    return gemotry_text, (max_X - min_X), (max_Y - min_Y), (max_Z - min_Z)
+    return gemotry_text, (max_X - min_X), (max_Y - min_Y), (max_Z - min_Z), edge_length_avg_none_fixed
 
  

@@ -13,9 +13,8 @@ RIGHT_QURLY_BRACKET = r"}"
 ## Optimization ##
 
 def get_fe_str(arguments):
-    fe_file_str, x_length, y_length, z_length = get_mesh_topology_for_fe(arguments)
+    fe_file_str, x_length, y_length, z_length, initial_target_length = get_mesh_topology_for_fe(arguments)
     estimated_volume = x_length * y_length * z_length
-    initial_target_length = (x_length ** 2 + y_length ** 2 + z_length ** 2) ** 0.5 / 5
 
     fe_file_str += f"read // Take and run SE commands from this file\n"
     fe_file_str += f"G 0; //\n"
