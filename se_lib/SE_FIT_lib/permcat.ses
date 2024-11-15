@@ -1,4 +1,0 @@
-run_series ::= {
-    for ( height ::= 0.5 ; height < 0.9 ; height ::= height + .05 )
-    { permload "cat"; read "permcat.gogo"; }
-    }

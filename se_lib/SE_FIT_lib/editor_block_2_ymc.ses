@@ -1,6 +1,0 @@
-quantity YMC {info_only|fixed = value} method facet_vector_integral
-vector_integrand:
-q1:0
-q2:0
-q3:z*y
-

@@ -1,8 +1,0 @@
-procedure bond_component (real bond)
-      {
-		bond_x := bond*bond_cos_phi*bond_cos_psi;
-		bond_y := bond*bond_cos_phi*bond_sin_psi;
-		bond_z := bond*bond_sin_phi;
-		return;
-      }
-

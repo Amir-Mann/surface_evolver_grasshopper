@@ -1,6 +1,0 @@
-cap_idx := 10
-function real get_sum (real a1, real b1)
-	{local prod;
-	 prod := a1*b1 + cap_idx;
-	 return prod;
-	}
