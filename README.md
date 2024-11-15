@@ -81,12 +81,12 @@ The battery has the following input fields:
 
 5. **r_input**  
    An integer specifying the number of refinement steps the algorithm should take. Each refinement step halves the target size of each edge in the mesh. The original target size is:  
-   $$\frac{||\text{mesh\_diagonal}||_2}{6} = \frac{\sqrt{(x_{\text{max}} - x_{\text{min}})^2 + (y_{\text{max}} - y_{\text{min}})^2 + (z_{\text{max}} - z_{\text{min}})^2}}{6}$$  
+   ![](https://github.com/Amir-Mann/surface_evolver_grasshopper/blob/main/assets/MathFormulaForEdgeLength.png?raw=true)
    Fluid convergence steps and remeshing are performed at each level of refinement. As a result, the runtime increases significantly with higher `r_input` values. The default value is 3.
 
 6. **volume_factor**  
    A float specifying the volume of liquid to simulate. The target shape's volume in the simulator is calculated as:  
-   $$0.5 \cdot \text{volume\_factor} \cdot (x_{\text{max}} - x_{\text{min}}) \cdot (y_{\text{max}} - y_{\text{min}}) \cdot (z_{\text{max}} - z_{\text{min}})$$  
+   ![](https://github.com/Amir-Mann/surface_evolver_grasshopper/blob/main/assets/MathFormulaForVolume.png?raw=true) 
    The default value is 1.
 
 7. **interactive**  
