@@ -1,9 +1,0 @@
-procedure constraint_matching (integer v_id, integer c_id)
-      {
-       if c_id ==1 then {set vertex[v_id] constraint wall_1};
-       if c_id ==2 then {set vertex[v_id] constraint wall_2};
-       if c_id ==3 then {set vertex[v_id] constraint wall_3};
-       if c_id ==4 then {set vertex[v_id] constraint wall_4};
-       if c_id ==5 then {set vertex[v_id] constraint wall_5};
-       if c_id ==6 then {set vertex[v_id] constraint wall_6};
-      }
