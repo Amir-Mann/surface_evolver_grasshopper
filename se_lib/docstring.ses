@@ -8,7 +8,6 @@ print_help := { printf "\n";
     printf "Useful commands by the MannHadad:\n";
     printf "    'optimize_step'     - Runs a single optimization step, towards the minimum energy shape. Ignores mesh quality.\n";
     printf "    'remesh_step'       - Optimizes mesh quality, Should sattle down in 3-5 iterations but might break the optimal shape.\n";
-    printf "    'loose_remesh_step' - Optimizes mesh quality, allowing some uneven triangles, better for really bad boundaries (small / large edges) or unconverged shapes.\n";
     printf "    'target_length := target_length / 2' - Making the target edge length smaller for the remeshing steps.\n";
     printf "    'dump_file'         - Save\n";
     printf "    'print_help'              - display this help message\n";
