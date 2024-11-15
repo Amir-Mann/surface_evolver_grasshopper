@@ -3,12 +3,15 @@
 
 This project was created for the [Bercovici Fluidic Technologies LAB](https://www.fluidic.technology/) to enable fluid dynamics simulation within the 3D modeling software [Rhino](https://www.rhino3d.com/). The tool utilizes [Surface Evolver](https://kenbrakke.com/evolver/evolver.html) to predict the equilibrium state of a polymer bounded by specific solid boundary conditions, floating within another liquid, as demonstrated in [this video](https://www.youtube.com/watch?v=MZLemDf43mk).
 
-![From left to right: An above view of the shape floating, a side view of the shape, and a view of the printed shape after being hardened and removed from its container. Credit: Bercovici Fluidic Technologies Lab.](https://github.com/Amir-Mann/surface_evolver_grasshopper/blob/4002bd9266f4472a42d0c997f43c14e80c786623/assets/FluidicPrintingDemo.png?raw=true)
+![](https://github.com/Amir-Mann/surface_evolver_grasshopper/blob/4002bd9266f4472a42d0c997f43c14e80c786623/assets/FluidicPrintingDemo.png?raw=true)
+
+*From left to right: An above view of the shape floating, a side view of the shape, and a view of the printed shape after being hardened and removed from its container. Credit: Bercovici Fluidic Technologies Lab.*
 
 [Grasshopper](https://www.grasshopper3d.com/) is a graphical algorithm editor integrated with Rhino. The tool is implemented as a Grasshopper script available in this repository.
 
-![From left to right: The input-conditioned shape to the tool and the output, settled shape.](https://github.com/Amir-Mann/surface_evolver_grasshopper/blob/491eed9aee365237a63bf57a52bc0faa90627ac5/assets/FirstIteration.png?raw=true)
+![](https://github.com/Amir-Mann/surface_evolver_grasshopper/blob/491eed9aee365237a63bf57a52bc0faa90627ac5/assets/FirstIteration.png?raw=true)
 
+*From left to right: The input-conditioned shape to the tool and the output, settled shape.*
 
 ## Main Capabilities
 
@@ -28,8 +31,9 @@ Thanks to the tool's flexible structure, it supports iterative workflows. For ex
 
 ![](https://github.com/Amir-Mann/surface_evolver_grasshopper/blob/main/assets/FinalSmooth3.png?raw=true)
 
-![From left to right: The original shape input, the shape after one iteration of the tool with the new boundary condition marked in red, and the resulting shape after another iteration with reduced volume and the new condition.](https://github.com/Amir-Mann/surface_evolver_grasshopper/blob/main/assets/FinalWireframe.png?raw=true)
+![](https://github.com/Amir-Mann/surface_evolver_grasshopper/blob/main/assets/FinalWireframe.png?raw=true)
 
+*From left to right: The original shape input, the shape after one iteration of the tool with the new boundary condition marked in red, and the resulting shape after another iteration with reduced volume and the new condition.*
 
  ## How to Install the Tool
  
