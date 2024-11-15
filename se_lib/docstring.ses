@@ -20,10 +20,4 @@ print_help := { printf "\n";
     printf "    *see https://kenbrakke.com/evolver/html/commands.htm for more command language       documentation.\n";
     printf "    *see https://kenbrakke.com/evolver/html/single.htm   for more signle letter commands documentation.\n";
     printf "\n";
-    printf "Useful commands by SE-FIT:\n";
-    printf "    'MAX_STEPS := <num>'    - Set the maximum allowed iteration of a spesific convergence step inside SE-FIT to run. Added code to SE-FIT\n";
-    printf "    'ps_conv_run_rough'     - Run SE-FIT's rough convergence loop.\n";
-    printf "    'ps_conv_run_fine'      - Run SE-FIT's fine convergence loop.\n";
-    printf "    *see surface_evolver_grasshopper.se_lib.SE_FIT_lib.convergence_operation.ses for other operations and SE-FIT settings\n";
-    printf "    *DISCLAIMER: Stopping an SE-FIT function call using Ctrl-C can break the program, the SE-FIT Gui offers better interface for such fine control.\n";
 }

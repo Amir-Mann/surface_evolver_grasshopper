@@ -21,10 +21,6 @@ def get_fe_str(arguments):
     fe_file_str += f"set body target {-estimated_volume * 0.5 * arguments['VOLUME_FACTOR']} where id == 1 // Sets the volume\n"
     if arguments['INTER_ACTIVE']:
         fe_file_str += f"s // Open graphics window\nq\n"
-        fe_file_str += f'read "{os.path.join(arguments["SEFIT_LIB_PATH"], "sefit_parameter_list.ses")}"\n'.replace('\\', '\\\\')
-        fe_file_str += f'read "{os.path.join(arguments["SEFIT_LIB_PATH"], "computation_kernel.ses")}"\n'.replace('\\', '\\\\')
-        fe_file_str += f'read "{os.path.join(arguments["SEFIT_LIB_PATH"], "eigenvalue_study.ses")}"\n'.replace('\\', '\\\\')
-        fe_file_str += f'read "{os.path.join(arguments["SEFIT_LIB_PATH"], "convergence_operation.ses")}"\n'.replace('\\', '\\\\')
         fe_file_str += f'read "{os.path.join(arguments["BASE_PATH"], "surface_evolver_grasshopper", "se_lib", "docstring.ses")}"\n'.replace('\\', '\\\\')
 
 
