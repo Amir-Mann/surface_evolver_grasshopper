@@ -18,7 +18,9 @@ def get_fe_str(arguments):
 
     fe_file_str += f"read // Take and run SE commands from this file\n"
     fe_file_str += f"G 0; //\n"
-    fe_file_str += f"set body target {-estimated_volume * 0.5 * arguments['VOLUME_FACTOR']} where id == 1 // Sets the volume\n"
+    ids_and_factors = [(1, arguments["VOLUME_FACTOR"])] + [(i + 2, factor) for i, factor in enumerate(arguments["inner_volume_factors"])]
+    for id, factor in ids_and_factors:
+        fe_file_str += f"set body target {-estimated_volume * 0.5 * factor} where id == {id}\n"
     if arguments['INTER_ACTIVE']:
         fe_file_str += f"s // Open graphics window\nq\n"
         fe_file_str += f'read "{os.path.join(arguments["BASE_PATH"], "surface_evolver_grasshopper", "se_lib", "docstring.ses")}"\n'.replace('\\', '\\\\')
